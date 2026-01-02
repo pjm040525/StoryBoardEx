@@ -104,45 +104,13 @@ type SuspendDuration = '1day' | '3days' | '7days' | '30days' | 'permanent';
 
 export function SystemAdminView() {
   const navigate = useNavigate();
+  
+  // 모든 상태를 조건부 return 전에 선언 (React 훅 규칙)
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  // 시스템 관리자 권한 체크
-  useEffect(() => {
-    const checkAdmin = () => {
-      const adminStatus = localStorage.getItem('isSystemAdmin');
-      if (adminStatus !== 'true') {
-        toast.error('시스템 관리자 권한이 필요합니다');
-        navigate('/login');
-        return;
-      }
-      setIsAdmin(true);
-      setIsLoading(false);
-    };
-    checkAdmin();
-  }, [navigate]);
-
-  // 로딩 중일 때
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="w-12 h-12 text-red-500 mx-auto mb-4 animate-pulse" />
-          <p className="text-stone-600">권한 확인 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 관리자가 아닌 경우 (이미 리다이렉트되지만 혹시 모를 경우를 위해)
-  if (!isAdmin) {
-    return null;
-  }
-  
-  // 제재 관련 상태
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [suspendTarget, setSuspendTarget] = useState<{ type: 'user' | 'group'; id: string; name: string } | null>(null);
@@ -202,6 +170,34 @@ export function SystemAdminView() {
     { id: '3', name: '수상한 투자 모임', image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=200', status: 'suspended', suspendedUntil: '2024-04-25', memberCount: 20, ownerName: '악성유저123', createdAt: '2024-03-01', reportCount: 8 },
     { id: '4', name: '불법 도박 모임', image: 'https://images.unsplash.com/photo-1596838132731-3c2b5f1c5b92?w=200', status: 'banned', memberCount: 50, ownerName: '스패머99', createdAt: '2024-03-10', reportCount: 15 },
   ]);
+
+  // 시스템 관리자 권한 체크 (모든 useState 다음에 useEffect)
+  useEffect(() => {
+    const adminStatus = localStorage.getItem('isSystemAdmin');
+    if (adminStatus !== 'true') {
+      toast.error('시스템 관리자 권한이 필요합니다');
+      navigate('/login');
+      return;
+    }
+    setIsAdmin(true);
+    setIsLoading(false);
+  }, [navigate]);
+
+  // 로딩 중이거나 권한이 없으면 조기 반환
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-12 h-12 text-red-500 mx-auto mb-4 animate-pulse" />
+          <p className="text-stone-600">권한 확인 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   const statusLabels: Record<string, string> = {
     pending: '대기 중',
