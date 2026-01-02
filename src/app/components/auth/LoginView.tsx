@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, Crown, Wallet, Shield, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Crown, Wallet, Shield, User, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
+import { Badge } from '../ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -16,10 +17,11 @@ import {
 
 // 테스트 계정 정보
 const TEST_ACCOUNTS = [
-  { id: 'owner', email: 'owner@test.com', password: 'test1234', role: '모임장', icon: Crown, color: 'bg-purple-100 text-purple-600' },
-  { id: 'treasurer', email: 'treasurer@test.com', password: 'test1234', role: '총무', icon: Wallet, color: 'bg-green-100 text-green-600' },
-  { id: 'manager', email: 'manager@test.com', password: 'test1234', role: '운영진', icon: Shield, color: 'bg-blue-100 text-blue-600' },
-  { id: 'member', email: 'member@test.com', password: 'test1234', role: '일반회원', icon: User, color: 'bg-stone-100 text-stone-600' },
+  { id: 'admin', email: 'admin@moim.com', password: 'admin1234', role: '시스템 관리자', icon: ShieldAlert, color: 'bg-red-100 text-red-600', isSystem: true },
+  { id: 'owner', email: 'owner@test.com', password: 'test1234', role: '모임장', icon: Crown, color: 'bg-orange-100 text-orange-600', isSystem: false },
+  { id: 'treasurer', email: 'treasurer@test.com', password: 'test1234', role: '총무', icon: Wallet, color: 'bg-green-100 text-green-600', isSystem: false },
+  { id: 'manager', email: 'manager@test.com', password: 'test1234', role: '운영진', icon: Shield, color: 'bg-blue-100 text-blue-600', isSystem: false },
+  { id: 'member', email: 'member@test.com', password: 'test1234', role: '일반회원', icon: User, color: 'bg-stone-100 text-stone-600', isSystem: false },
 ];
 
 export function LoginView() {
@@ -50,14 +52,25 @@ export function LoginView() {
         // 테스트 계정 로그인 - 역할 정보 저장
         localStorage.setItem('userRole', testAccount.id);
         localStorage.setItem('userEmail', testAccount.email);
-        toast.success(`${testAccount.role}(으)로 로그인되었습니다!`);
+        localStorage.setItem('isSystemAdmin', testAccount.isSystem ? 'true' : 'false');
+        
+        if (testAccount.isSystem) {
+          toast.success(`시스템 관리자로 로그인되었습니다!`, {
+            description: '모든 모임과 회원을 관리할 수 있습니다.'
+          });
+          navigate('/system-admin');
+        } else {
+          toast.success(`${testAccount.role}(으)로 로그인되었습니다!`);
+          navigate('/');
+        }
       } else {
         // 일반 로그인
         localStorage.setItem('userRole', 'member');
         localStorage.setItem('userEmail', email);
+        localStorage.setItem('isSystemAdmin', 'false');
         toast.success('로그인 성공!');
+        navigate('/');
       }
-      navigate('/');
     }, 1000);
   };
 
@@ -195,7 +208,32 @@ export function LoginView() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-4">
-            {TEST_ACCOUNTS.map((account) => (
+            {/* 시스템 관리자 (분리) */}
+            <div className="pb-2 mb-2 border-b border-stone-200">
+              <p className="text-xs text-stone-500 mb-2">🛡️ 시스템 관리</p>
+              {TEST_ACCOUNTS.filter(a => a.isSystem).map((account) => (
+                <button
+                  key={account.id}
+                  onClick={() => handleTestLogin(account)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-red-200 hover:border-red-400 hover:bg-red-50 transition-colors text-left"
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${account.color}`}>
+                    <account.icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-stone-900">{account.role}</p>
+                      <Badge className="bg-red-500 text-white text-[10px]">ADMIN</Badge>
+                    </div>
+                    <p className="text-xs text-stone-500">{account.email}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* 일반 테스트 계정 */}
+            <p className="text-xs text-stone-500 mb-2">👤 모임 역할</p>
+            {TEST_ACCOUNTS.filter(a => !a.isSystem).map((account) => (
               <button
                 key={account.id}
                 onClick={() => handleTestLogin(account)}
@@ -211,9 +249,14 @@ export function LoginView() {
               </button>
             ))}
           </div>
-          <p className="text-xs text-stone-400 text-center">
-            비밀번호는 모두 <code className="bg-stone-100 px-1 rounded">test1234</code> 입니다
-          </p>
+          <div className="space-y-1 text-center">
+            <p className="text-xs text-stone-400">
+              일반 계정 비밀번호: <code className="bg-stone-100 px-1 rounded">test1234</code>
+            </p>
+            <p className="text-xs text-stone-400">
+              관리자 비밀번호: <code className="bg-red-100 px-1 rounded">admin1234</code>
+            </p>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

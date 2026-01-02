@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Shield, 
@@ -8,19 +8,28 @@ import {
   UserX, 
   Ban, 
   Search,
-  AlertTriangle,
   Eye,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Trash2,
+  Home,
+  AlertTriangle,
+  User,
+  PauseCircle,
+  PlayCircle,
+  MoreVertical
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,12 +41,27 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 
 interface Report {
   id: string;
@@ -51,22 +75,45 @@ interface Report {
   createdAt: string;
 }
 
-interface BannedItem {
+interface ManagedUser {
   id: string;
-  type: 'user' | 'group';
   name: string;
-  reason: string;
-  bannedAt: string;
-  bannedBy: string;
+  email: string;
+  avatar?: string;
+  status: 'active' | 'suspended' | 'banned';
+  suspendedUntil?: string;
+  joinedAt: string;
+  groupCount: number;
+  reportCount: number;
 }
+
+interface ManagedGroup {
+  id: string;
+  name: string;
+  image: string;
+  status: 'active' | 'suspended' | 'banned';
+  suspendedUntil?: string;
+  memberCount: number;
+  ownerName: string;
+  createdAt: string;
+  reportCount: number;
+}
+
+type SuspendDuration = '1day' | '3days' | '7days' | '30days' | 'permanent';
 
 export function SystemAdminView() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [showBanDialog, setShowBanDialog] = useState(false);
-  const [banTarget, setBanTarget] = useState<{ type: 'user' | 'group'; id: string; name: string } | null>(null);
+  
+  // 제재 관련 상태
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [suspendTarget, setSuspendTarget] = useState<{ type: 'user' | 'group'; id: string; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'user' | 'group'; id: string; name: string } | null>(null);
+  const [suspendDuration, setSuspendDuration] = useState<SuspendDuration>('7days');
+  const [suspendReason, setSuspendReason] = useState('');
 
   // Mock 신고 데이터
   const [reports, setReports] = useState<Report[]>([
@@ -104,24 +151,21 @@ export function SystemAdminView() {
     },
   ]);
 
-  // Mock 밴 목록
-  const [bannedItems, setBannedItems] = useState<BannedItem[]>([
-    {
-      id: '1',
-      type: 'user',
-      name: '스패머99',
-      reason: '반복적인 스팸 게시',
-      bannedAt: '2024-04-05',
-      bannedBy: '관리자1',
-    },
-    {
-      id: '2',
-      type: 'group',
-      name: '불법 도박 모임',
-      reason: '불법 콘텐츠',
-      bannedAt: '2024-04-01',
-      bannedBy: '관리자1',
-    },
+  // Mock 사용자 목록
+  const [users, setUsers] = useState<ManagedUser[]>([
+    { id: '1', name: '홍길동', email: 'hong@test.com', status: 'active', joinedAt: '2024-01-15', groupCount: 3, reportCount: 0 },
+    { id: '2', name: '김철수', email: 'kim@test.com', status: 'active', joinedAt: '2024-02-10', groupCount: 2, reportCount: 1 },
+    { id: '3', name: '악성유저123', email: 'bad@test.com', status: 'suspended', suspendedUntil: '2024-04-20', joinedAt: '2024-03-01', groupCount: 1, reportCount: 5 },
+    { id: '4', name: '스패머99', email: 'spam@test.com', status: 'banned', joinedAt: '2024-03-15', groupCount: 0, reportCount: 10 },
+    { id: '5', name: '이영희', email: 'lee@test.com', status: 'active', joinedAt: '2024-03-20', groupCount: 4, reportCount: 0 },
+  ]);
+
+  // Mock 모임 목록
+  const [groups, setGroups] = useState<ManagedGroup[]>([
+    { id: '1', name: '주말 등산 클럽', image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=200', status: 'active', memberCount: 15, ownerName: '홍길동', createdAt: '2024-01-15', reportCount: 0 },
+    { id: '2', name: '강남 독서 모임', image: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=200', status: 'active', memberCount: 8, ownerName: '김철수', createdAt: '2024-02-10', reportCount: 0 },
+    { id: '3', name: '수상한 투자 모임', image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=200', status: 'suspended', suspendedUntil: '2024-04-25', memberCount: 20, ownerName: '악성유저123', createdAt: '2024-03-01', reportCount: 8 },
+    { id: '4', name: '불법 도박 모임', image: 'https://images.unsplash.com/photo-1596838132731-3c2b5f1c5b92?w=200', status: 'banned', memberCount: 50, ownerName: '스패머99', createdAt: '2024-03-10', reportCount: 15 },
   ]);
 
   const statusLabels: Record<string, string> = {
@@ -129,6 +173,9 @@ export function SystemAdminView() {
     reviewing: '검토 중',
     resolved: '처리 완료',
     dismissed: '기각',
+    active: '활성',
+    suspended: '일시정지',
+    banned: '영구정지',
   };
 
   const statusColors: Record<string, string> = {
@@ -136,12 +183,23 @@ export function SystemAdminView() {
     reviewing: 'bg-blue-100 text-blue-700',
     resolved: 'bg-green-100 text-green-700',
     dismissed: 'bg-stone-100 text-stone-600',
+    active: 'bg-green-100 text-green-700',
+    suspended: 'bg-amber-100 text-amber-700',
+    banned: 'bg-red-100 text-red-700',
   };
 
   const typeLabels: Record<string, string> = {
     user: '사용자',
     group: '모임',
     post: '게시글',
+  };
+
+  const durationLabels: Record<SuspendDuration, string> = {
+    '1day': '1일',
+    '3days': '3일',
+    '7days': '7일',
+    '30days': '30일',
+    'permanent': '영구',
   };
 
   const filteredReports = reports.filter(r => {
@@ -151,6 +209,16 @@ export function SystemAdminView() {
     return matchesSearch && matchesStatus;
   });
 
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredGroups = groups.filter(g => 
+    g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    g.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const handleUpdateStatus = (reportId: string, newStatus: Report['status']) => {
     setReports(prev => prev.map(r => 
       r.id === reportId ? { ...r, status: newStatus } : r
@@ -159,88 +227,151 @@ export function SystemAdminView() {
     setSelectedReport(null);
   };
 
-  const handleBan = () => {
-    if (!banTarget) return;
+  const handleSuspend = () => {
+    if (!suspendTarget || !suspendReason) {
+      toast.error('정지 사유를 입력해주세요');
+      return;
+    }
 
-    setBannedItems(prev => [...prev, {
-      id: Date.now().toString(),
-      type: banTarget.type,
-      name: banTarget.name,
-      reason: '관리자 제재',
-      bannedAt: new Date().toISOString().split('T')[0],
-      bannedBy: '시스템관리자',
-    }]);
+    if (suspendTarget.type === 'user') {
+      setUsers(prev => prev.map(u => 
+        u.id === suspendTarget.id 
+          ? { ...u, status: suspendDuration === 'permanent' ? 'banned' : 'suspended', suspendedUntil: suspendDuration === 'permanent' ? undefined : '계산된 날짜' } 
+          : u
+      ));
+    } else {
+      setGroups(prev => prev.map(g => 
+        g.id === suspendTarget.id 
+          ? { ...g, status: suspendDuration === 'permanent' ? 'banned' : 'suspended', suspendedUntil: suspendDuration === 'permanent' ? undefined : '계산된 날짜' } 
+          : g
+      ));
+    }
 
-    toast.success(`${banTarget.name}이(가) 밴 처리되었습니다`);
-    setShowBanDialog(false);
-    setBanTarget(null);
+    const action = suspendDuration === 'permanent' ? '영구정지' : `${durationLabels[suspendDuration]} 정지`;
+    toast.success(`${suspendTarget.name}이(가) ${action} 처리되었습니다`);
+    setShowSuspendDialog(false);
+    setSuspendTarget(null);
+    setSuspendReason('');
+    setSuspendDuration('7days');
   };
 
-  const handleUnban = (id: string) => {
-    setBannedItems(prev => prev.filter(item => item.id !== id));
-    toast.success('밴이 해제되었습니다');
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+
+    if (deleteTarget.type === 'user') {
+      setUsers(prev => prev.filter(u => u.id !== deleteTarget.id));
+    } else {
+      setGroups(prev => prev.filter(g => g.id !== deleteTarget.id));
+    }
+
+    toast.success(`${deleteTarget.name}이(가) 삭제되었습니다`);
+    setShowDeleteDialog(false);
+    setDeleteTarget(null);
+  };
+
+  const handleActivate = (type: 'user' | 'group', id: string, name: string) => {
+    if (type === 'user') {
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active', suspendedUntil: undefined } : u));
+    } else {
+      setGroups(prev => prev.map(g => g.id === id ? { ...g, status: 'active', suspendedUntil: undefined } : g));
+    }
+    toast.success(`${name}의 정지가 해제되었습니다`);
   };
 
   const stats = {
     totalReports: reports.length,
     pending: reports.filter(r => r.status === 'pending').length,
-    reviewing: reports.filter(r => r.status === 'reviewing').length,
-    totalBanned: bannedItems.length,
+    totalUsers: users.length,
+    suspendedUsers: users.filter(u => u.status === 'suspended').length,
+    bannedUsers: users.filter(u => u.status === 'banned').length,
+    totalGroups: groups.length,
+    suspendedGroups: groups.filter(g => g.status === 'suspended').length,
+    bannedGroups: groups.filter(g => g.status === 'banned').length,
   };
 
   return (
     <div className="min-h-screen bg-stone-50 pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white border-b border-stone-100">
-        <div className="flex items-center px-4 py-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="-ml-2">
-            <ArrowLeft className="w-6 h-6 text-stone-800" />
-          </Button>
-          <div className="ml-2 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-purple-600" />
-            <h1 className="text-lg font-semibold text-stone-800">시스템 관리자</h1>
+      <header className="sticky top-0 z-30 bg-gradient-to-r from-red-600 to-red-700 text-white">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-white hover:bg-white/20">
+              <Home className="w-6 h-6" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <Shield className="w-6 h-6" />
+              <div>
+                <h1 className="text-lg font-bold">시스템 관리자</h1>
+                <p className="text-xs text-red-100">admin@moim.com</p>
+              </div>
+            </div>
           </div>
+          <Badge className="bg-white/20 text-white border-none">ADMIN</Badge>
         </div>
       </header>
 
       <div className="p-5 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3">
-          <Card className="border-stone-100">
-            <CardContent className="p-3 text-center">
-              <Flag className="w-5 h-5 text-stone-400 mx-auto" />
-              <p className="text-xl font-bold text-stone-900 mt-1">{stats.totalReports}</p>
-              <p className="text-xs text-stone-500">전체 신고</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 gap-3">
           <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="p-3 text-center">
-              <Clock className="w-5 h-5 text-amber-600 mx-auto" />
-              <p className="text-xl font-bold text-amber-700 mt-1">{stats.pending}</p>
-              <p className="text-xs text-amber-600">대기 중</p>
-            </CardContent>
-          </Card>
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="p-3 text-center">
-              <Eye className="w-5 h-5 text-blue-600 mx-auto" />
-              <p className="text-xl font-bold text-blue-700 mt-1">{stats.reviewing}</p>
-              <p className="text-xs text-blue-600">검토 중</p>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <Flag className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-amber-700">{stats.pending}</p>
+                  <p className="text-xs text-amber-600">대기 중 신고</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
           <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-3 text-center">
-              <Ban className="w-5 h-5 text-red-600 mx-auto" />
-              <p className="text-xl font-bold text-red-700 mt-1">{stats.totalBanned}</p>
-              <p className="text-xs text-red-600">밴 처리</p>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <Ban className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-red-700">{stats.bannedUsers + stats.bannedGroups}</p>
+                  <p className="text-xs text-red-600">영구정지</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
+        {/* Quick Stats */}
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-white rounded-xl p-3 text-center border border-stone-100">
+            <p className="text-lg font-bold text-stone-900">{stats.totalUsers}</p>
+            <p className="text-xs text-stone-500">전체 사용자</p>
+          </div>
+          <div className="bg-white rounded-xl p-3 text-center border border-stone-100">
+            <p className="text-lg font-bold text-amber-600">{stats.suspendedUsers}</p>
+            <p className="text-xs text-stone-500">정지 사용자</p>
+          </div>
+          <div className="bg-white rounded-xl p-3 text-center border border-stone-100">
+            <p className="text-lg font-bold text-stone-900">{stats.totalGroups}</p>
+            <p className="text-xs text-stone-500">전체 모임</p>
+          </div>
+          <div className="bg-white rounded-xl p-3 text-center border border-stone-100">
+            <p className="text-lg font-bold text-amber-600">{stats.suspendedGroups}</p>
+            <p className="text-xs text-stone-500">정지 모임</p>
+          </div>
+        </div>
+
         {/* Tabs */}
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="reports">신고 관리</TabsTrigger>
-            <TabsTrigger value="banned">밴 목록</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="reports" className="text-xs">
+              신고 관리
+              {stats.pending > 0 && (
+                <Badge className="ml-1 bg-red-500 text-white text-[10px] px-1">{stats.pending}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="users" className="text-xs">사용자</TabsTrigger>
+            <TabsTrigger value="groups" className="text-xs">모임</TabsTrigger>
           </TabsList>
 
           {/* Reports Tab */}
@@ -290,7 +421,7 @@ export function SystemAdminView() {
                           report.type === 'user' ? 'bg-purple-100' : 
                           report.type === 'group' ? 'bg-blue-100' : 'bg-orange-100'
                         }`}>
-                          {report.type === 'user' ? <UserX className="w-5 h-5 text-purple-600" /> :
+                          {report.type === 'user' ? <User className="w-5 h-5 text-purple-600" /> :
                            report.type === 'group' ? <Users className="w-5 h-5 text-blue-600" /> :
                            <Flag className="w-5 h-5 text-orange-600" />}
                         </div>
@@ -317,52 +448,174 @@ export function SystemAdminView() {
             </div>
           </TabsContent>
 
-          {/* Banned Tab */}
-          <TabsContent value="banned" className="space-y-4">
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <Input
+                placeholder="사용자 검색..."
+                className="pl-10 h-11 bg-white"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
             <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden">
-              {bannedItems.length === 0 ? (
-                <div className="p-8 text-center text-stone-500">
-                  <Ban className="w-12 h-12 mx-auto mb-3 text-stone-300" />
-                  <p>밴 처리된 항목이 없습니다</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-stone-100">
-                  {bannedItems.map(item => (
-                    <div key={item.id} className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            item.type === 'user' ? 'bg-red-100' : 'bg-red-100'
-                          }`}>
-                            {item.type === 'user' ? <UserX className="w-5 h-5 text-red-600" /> :
-                             <Users className="w-5 h-5 text-red-600" />}
+              <div className="divide-y divide-stone-100">
+                {filteredUsers.map(user => (
+                  <div key={user.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={user.avatar} />
+                          <AvatarFallback>{user.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-stone-900">{user.name}</p>
+                            <Badge className={`text-xs ${statusColors[user.status]}`}>
+                              {statusLabels[user.status]}
+                            </Badge>
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-stone-900">{item.name}</p>
-                              <Badge variant="secondary" className="text-xs bg-red-100 text-red-700">
-                                {item.type === 'user' ? '사용자' : '모임'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-stone-500">{item.reason}</p>
-                            <p className="text-xs text-stone-400">
-                              {item.bannedAt} · {item.bannedBy}
-                            </p>
+                          <p className="text-xs text-stone-500">{user.email}</p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-stone-400">
+                            <span>모임 {user.groupCount}개</span>
+                            {user.reportCount > 0 && (
+                              <span className="text-red-500">신고 {user.reportCount}회</span>
+                            )}
                           </div>
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleUnban(item.id)}
-                          className="text-green-600 hover:bg-green-50"
-                        >
-                          해제
-                        </Button>
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {user.status === 'active' && (
+                            <DropdownMenuItem 
+                              className="text-amber-600"
+                              onClick={() => {
+                                setSuspendTarget({ type: 'user', id: user.id, name: user.name });
+                                setShowSuspendDialog(true);
+                              }}
+                            >
+                              <PauseCircle className="w-4 h-4 mr-2" />
+                              정지하기
+                            </DropdownMenuItem>
+                          )}
+                          {(user.status === 'suspended' || user.status === 'banned') && (
+                            <DropdownMenuItem 
+                              className="text-green-600"
+                              onClick={() => handleActivate('user', user.id, user.name)}
+                            >
+                              <PlayCircle className="w-4 h-4 mr-2" />
+                              정지 해제
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => {
+                              setDeleteTarget({ type: 'user', id: user.id, name: user.name });
+                              setShowDeleteDialog(true);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            계정 삭제
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Groups Tab */}
+          <TabsContent value="groups" className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <Input
+                placeholder="모임 검색..."
+                className="pl-10 h-11 bg-white"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden">
+              <div className="divide-y divide-stone-100">
+                {filteredGroups.map(group => (
+                  <div key={group.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-200">
+                          <img src={group.image} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-stone-900">{group.name}</p>
+                            <Badge className={`text-xs ${statusColors[group.status]}`}>
+                              {statusLabels[group.status]}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-stone-500">모임장: {group.ownerName}</p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-stone-400">
+                            <span>멤버 {group.memberCount}명</span>
+                            {group.reportCount > 0 && (
+                              <span className="text-red-500">신고 {group.reportCount}회</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {group.status === 'active' && (
+                            <DropdownMenuItem 
+                              className="text-amber-600"
+                              onClick={() => {
+                                setSuspendTarget({ type: 'group', id: group.id, name: group.name });
+                                setShowSuspendDialog(true);
+                              }}
+                            >
+                              <PauseCircle className="w-4 h-4 mr-2" />
+                              정지하기
+                            </DropdownMenuItem>
+                          )}
+                          {(group.status === 'suspended' || group.status === 'banned') && (
+                            <DropdownMenuItem 
+                              className="text-green-600"
+                              onClick={() => handleActivate('group', group.id, group.name)}
+                            >
+                              <PlayCircle className="w-4 h-4 mr-2" />
+                              정지 해제
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => {
+                              setDeleteTarget({ type: 'group', id: group.id, name: group.name });
+                              setShowDeleteDialog(true);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            모임 삭제
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
@@ -424,17 +677,17 @@ export function SystemAdminView() {
                       variant="destructive"
                       className="w-full"
                       onClick={() => {
-                        setBanTarget({
+                        setSuspendTarget({
                           type: selectedReport.type as 'user' | 'group',
                           id: selectedReport.targetId,
                           name: selectedReport.targetName,
                         });
                         setSelectedReport(null);
-                        setShowBanDialog(true);
+                        setShowSuspendDialog(true);
                       }}
                     >
                       <Ban className="w-4 h-4 mr-2" />
-                      {selectedReport.type === 'user' ? '사용자 밴' : '모임 밴'}
+                      {selectedReport.type === 'user' ? '사용자 제재' : '모임 제재'}
                     </Button>
                   )}
                 </div>
@@ -447,27 +700,101 @@ export function SystemAdminView() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Ban Confirm Dialog */}
-      <AlertDialog open={showBanDialog} onOpenChange={setShowBanDialog}>
+      {/* Suspend Dialog */}
+      <Dialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PauseCircle className="w-5 h-5 text-amber-500" />
+              {suspendTarget?.type === 'user' ? '사용자' : '모임'} 정지
+            </DialogTitle>
+            <DialogDescription>
+              {suspendTarget && `"${suspendTarget.name}"을(를) 정지합니다.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-3">
+              <Label>정지 기간</Label>
+              <RadioGroup value={suspendDuration} onValueChange={(v) => setSuspendDuration(v as SuspendDuration)}>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['1day', '3days', '7days'] as SuspendDuration[]).map(d => (
+                    <div key={d} className={`flex items-center space-x-2 border rounded-lg p-3 cursor-pointer ${suspendDuration === d ? 'border-amber-500 bg-amber-50' : 'border-stone-200'}`}>
+                      <RadioGroupItem value={d} id={d} />
+                      <Label htmlFor={d} className="cursor-pointer">{durationLabels[d]}</Label>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className={`flex items-center space-x-2 border rounded-lg p-3 cursor-pointer ${suspendDuration === '30days' ? 'border-amber-500 bg-amber-50' : 'border-stone-200'}`}>
+                    <RadioGroupItem value="30days" id="30days" />
+                    <Label htmlFor="30days" className="cursor-pointer">30일</Label>
+                  </div>
+                  <div className={`flex items-center space-x-2 border rounded-lg p-3 cursor-pointer ${suspendDuration === 'permanent' ? 'border-red-500 bg-red-50' : 'border-stone-200'}`}>
+                    <RadioGroupItem value="permanent" id="permanent" />
+                    <Label htmlFor="permanent" className="cursor-pointer text-red-600">영구정지</Label>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="space-y-2">
+              <Label>정지 사유</Label>
+              <Textarea
+                placeholder="정지 사유를 입력하세요"
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                className="min-h-[80px]"
+              />
+            </div>
+            {suspendDuration === 'permanent' && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-xs text-red-700">
+                  ⚠️ 영구정지는 해당 {suspendTarget?.type === 'user' ? '사용자' : '모임'}의 모든 활동을 완전히 차단합니다.
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSuspendDialog(false)}>
+              취소
+            </Button>
+            <Button 
+              onClick={handleSuspend}
+              className={suspendDuration === 'permanent' ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}
+            >
+              {suspendDuration === 'permanent' ? '영구정지' : '정지하기'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-              <Ban className="w-5 h-5" />
-              밴 처리 확인
+              <Trash2 className="w-5 h-5" />
+              {deleteTarget?.type === 'user' ? '계정' : '모임'} 삭제
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {banTarget && (
-                <p>
-                  <span className="font-medium text-stone-900">"{banTarget.name}"</span>을(를) 
-                  밴 처리하시겠습니까? 이 작업은 취소할 수 있습니다.
-                </p>
+              {deleteTarget && (
+                <div className="space-y-3">
+                  <p>
+                    <span className="font-medium text-stone-900">"{deleteTarget.name}"</span>을(를) 
+                    완전히 삭제하시겠습니까?
+                  </p>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-xs text-red-700">
+                      ⚠️ 이 작업은 되돌릴 수 없습니다. 모든 관련 데이터가 영구적으로 삭제됩니다.
+                    </p>
+                  </div>
+                </div>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBan} className="bg-red-500 hover:bg-red-600">
-              밴 처리
+            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+              삭제하기
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -475,4 +802,3 @@ export function SystemAdminView() {
     </div>
   );
 }
-
