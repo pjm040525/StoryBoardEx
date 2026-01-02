@@ -155,12 +155,20 @@ export function HomeView() {
               : '새로운 모임을 만들어보세요!'}
           </p>
           {!searchQuery && (
-            <Link to="/create-group">
-              <Button className="bg-orange-500 hover:bg-orange-600">
-                <Plus className="w-4 h-4 mr-2" />
-                모임 만들기
-              </Button>
-            </Link>
+            <div className="flex gap-3">
+              <Link to="/explore">
+                <Button variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">
+                  <Compass className="w-4 h-4 mr-2" />
+                  모임 둘러보기
+                </Button>
+              </Link>
+              <Link to="/create-group">
+                <Button className="bg-orange-500 hover:bg-orange-600">
+                  <Plus className="w-4 h-4 mr-2" />
+                  모임 만들기
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
       )}
