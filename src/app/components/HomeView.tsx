@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Plus, Bell, Search, X, Users, Compass, KeyRound, Crown, Wallet, Shield } from 'lucide-react';
+import { Plus, Bell, Search, X, Users, Compass, KeyRound, Crown, Wallet, Shield, Coins } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { MOCK_GROUPS } from '../data/mockData';
-import { ROLE_LABELS, ROLE_COLORS, UserRole } from '../data/userRoles';
+import { MOCK_GROUPS, Group } from '../data/mockData';
+import { getRoleLabel, getRoleColor, UserRole } from '../data/userRoles';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 // 전체 공개 모임 (탐색용 mock)
-const PUBLIC_GROUPS = [
+const PUBLIC_GROUPS: Partial<Group>[] = [
   {
     id: 'public1',
     name: '서울 러닝 크루',
@@ -21,7 +21,6 @@ const PUBLIC_GROUPS = [
     maxMembers: 100,
     type: 'club' as const,
     isPublic: true,
-    myRole: undefined,
     nextEvent: { title: '한강 러닝', date: '4/14', location: '여의도' },
   },
   {
@@ -33,23 +32,16 @@ const PUBLIC_GROUPS = [
     maxMembers: 30,
     type: 'study' as const,
     isPublic: true,
-    myRole: undefined,
     nextEvent: { title: '4월 독서 토론', date: '4/20', location: '강남' },
   },
 ];
 
 // 역할 아이콘 컴포넌트
-function RoleIcon({ role }: { role: UserRole }) {
-  switch (role) {
-    case 'owner':
-      return <Crown className="w-3 h-3" />;
-    case 'treasurer':
-      return <Wallet className="w-3 h-3" />;
-    case 'manager':
-      return <Shield className="w-3 h-3" />;
-    default:
-      return null;
-  }
+function RoleIcon({ role }: { role: string }) {
+  if (role.includes('모임장')) return <Crown className="w-3 h-3" />;
+  if (role.includes('총무')) return <Wallet className="w-3 h-3" />;
+  if (role.includes('운영진')) return <Shield className="w-3 h-3" />;
+  return null;
 }
 
 export function HomeView() {
@@ -72,13 +64,21 @@ export function HomeView() {
     ? [...MOCK_GROUPS, ...PUBLIC_GROUPS].filter(group => {
         const matchesSearch = 
           group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          group.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+          group.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesType = filterType === 'all' || group.type === filterType;
         return matchesSearch && matchesType;
       })
     : [];
 
   const displayGroups = searchScope === 'my' ? filteredMyGroups : filteredAllGroups;
+
+  // 역할별 모임 수 계산
+  const roleCounts = {
+    owner: MOCK_GROUPS.filter(g => g.myRole === 'owner').length,
+    treasurer: MOCK_GROUPS.filter(g => g.myRole === 'treasurer' || g.myRoles?.includes('treasurer')).length,
+    manager: MOCK_GROUPS.filter(g => g.myRole === 'manager' || g.myRoles?.includes('manager')).length,
+    member: MOCK_GROUPS.filter(g => g.myRole === 'member').length,
+  };
 
   return (
     <div className="p-4 space-y-6 pb-24">
@@ -123,15 +123,28 @@ export function HomeView() {
         </Link>
       </div>
 
-      {/* Role Legend */}
-      <div className="flex flex-wrap gap-2 p-3 bg-stone-50 rounded-xl">
-        <span className="text-xs text-stone-500 w-full mb-1">내 역할:</span>
-        {MOCK_GROUPS.filter((g, i, arr) => arr.findIndex(x => x.myRole === g.myRole) === i).map(group => (
-          <Badge key={group.myRole} className={`${ROLE_COLORS[group.myRole]} text-xs flex items-center gap-1`}>
-            <RoleIcon role={group.myRole} />
-            {ROLE_LABELS[group.myRole]}
-          </Badge>
-        ))}
+      {/* Role Summary */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="flex flex-col items-center p-2 bg-orange-50 rounded-xl">
+          <Crown className="w-5 h-5 text-orange-500 mb-1" />
+          <span className="text-lg font-bold text-orange-600">{roleCounts.owner}</span>
+          <span className="text-xs text-stone-500">모임장</span>
+        </div>
+        <div className="flex flex-col items-center p-2 bg-green-50 rounded-xl">
+          <Wallet className="w-5 h-5 text-green-500 mb-1" />
+          <span className="text-lg font-bold text-green-600">{roleCounts.treasurer}</span>
+          <span className="text-xs text-stone-500">총무</span>
+        </div>
+        <div className="flex flex-col items-center p-2 bg-blue-50 rounded-xl">
+          <Shield className="w-5 h-5 text-blue-500 mb-1" />
+          <span className="text-lg font-bold text-blue-600">{roleCounts.manager}</span>
+          <span className="text-xs text-stone-500">운영진</span>
+        </div>
+        <div className="flex flex-col items-center p-2 bg-stone-100 rounded-xl">
+          <Users className="w-5 h-5 text-stone-500 mb-1" />
+          <span className="text-lg font-bold text-stone-600">{roleCounts.member}</span>
+          <span className="text-xs text-stone-500">회원</span>
+        </div>
       </div>
 
       {/* Search */}
@@ -210,71 +223,100 @@ export function HomeView() {
       {/* Group List */}
       {displayGroups.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayGroups.map((group) => (
-          <Link 
-            to={searchScope === 'all' && !MOCK_GROUPS.find(g => g.id === group.id) 
-              ? `/explore/${group.id}` 
-              : `/group/${group.id}`
-            } 
-            key={group.id} 
-            className="block"
-          >
-            <Card className="overflow-hidden hover:shadow-md transition-shadow border-stone-100 bg-white">
-              <div className="relative h-32 bg-stone-200">
-                <img
-                  src={group.image}
-                  alt={group.name}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5Yzk3OTciIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBub3QgZm91bmQ8L3RleHQ+PC9zdmc+';
-                  }}
-                />
-                <div className="absolute top-2 right-2 flex gap-1">
-                  {searchScope === 'all' && !MOCK_GROUPS.find(g => g.id === group.id) && (
-                    <Badge variant="secondary" className="bg-blue-500 text-white text-xs">
-                      공개
-                    </Badge>
-                  )}
-                  <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm text-stone-800 hover:bg-white">
-                    {group.type === 'club' ? '동아리' : group.type === 'study' ? '스터디' : '정모'}
-                  </Badge>
-                </div>
-                {/* 역할 배지 - 내 모임만 표시 */}
-                {group.myRole && (
-                  <div className="absolute bottom-2 left-2">
-                    <Badge className={`${ROLE_COLORS[group.myRole]} text-xs flex items-center gap-1 shadow-sm`}>
-                      <RoleIcon role={group.myRole} />
-                      {ROLE_LABELS[group.myRole]}
-                    </Badge>
+          {displayGroups.map((group) => {
+            const isMyGroup = MOCK_GROUPS.find(g => g.id === group.id);
+            const roleLabel = isMyGroup ? getRoleLabel(group.id || '') : null;
+            const roleColor = isMyGroup ? getRoleColor(group.id || '') : '';
+            const fullGroup = isMyGroup as Group | undefined;
+            
+            return (
+              <Link 
+                to={searchScope === 'all' && !isMyGroup
+                  ? `/explore/${group.id}` 
+                  : `/group/${group.id}`
+                } 
+                key={group.id} 
+                className="block"
+              >
+                <Card className="overflow-hidden hover:shadow-md transition-shadow border-stone-100 bg-white">
+                  <div className="relative h-32 bg-stone-200">
+                    <img
+                      src={group.image}
+                      alt={group.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5Yzk3OTciIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBub3QgZm91bmQ8L3RleHQ+PC9zdmc+';
+                      }}
+                    />
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      {searchScope === 'all' && !isMyGroup && (
+                        <Badge variant="secondary" className="bg-blue-500 text-white text-xs">
+                          공개
+                        </Badge>
+                      )}
+                      <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm text-stone-800 hover:bg-white">
+                        {group.type === 'club' ? '동아리' : group.type === 'study' ? '스터디' : '정모'}
+                      </Badge>
+                    </div>
+                    {/* 역할 배지 - 내 모임만 표시 */}
+                    {roleLabel && (
+                      <div className="absolute bottom-2 left-2">
+                        <Badge className={`${roleColor} text-xs flex items-center gap-1 shadow-sm`}>
+                          <RoleIcon role={roleLabel} />
+                          {roleLabel}
+                        </Badge>
+                      </div>
+                    )}
+                    {/* 통장 유형 배지 - 내 모임만 표시 */}
+                    {fullGroup?.account && (
+                      <div className="absolute bottom-2 right-2">
+                        <Badge className={`text-xs shadow-sm ${
+                          fullGroup.account.managementType === 'fair' 
+                            ? 'bg-green-500/90 text-white' 
+                            : 'bg-blue-500/90 text-white'
+                        }`}>
+                          <Coins className="w-3 h-3 mr-1" />
+                          {fullGroup.account.managementType === 'fair' ? '공정정산' : '운영비'}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg text-stone-900">{group.name}</h3>
-                  <span className="text-xs text-stone-500 bg-stone-100 px-2 py-1 rounded-full">
-                    {group.memberCount}/{group.maxMembers}명
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {group.tags.map((tag) => (
-                    <span key={tag} className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-                {group.nextEvent && (
-                  <div className="flex items-center text-sm text-stone-600 mt-3 pt-3 border-t border-stone-100">
-                    <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                    <span className="truncate">{group.nextEvent.title} ({group.nextEvent.date})</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-lg text-stone-900">{group.name}</h3>
+                      <span className="text-xs text-stone-500 bg-stone-100 px-2 py-1 rounded-full">
+                        {group.memberCount}/{group.maxMembers}명
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {group.tags?.map((tag) => (
+                        <span key={tag} className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                    {/* 통장 잔액 - 내 모임만 표시 */}
+                    {fullGroup?.account && (
+                      <div className="flex items-center justify-between text-sm py-2 px-3 bg-stone-50 rounded-lg mb-3">
+                        <span className="text-stone-500">통장 잔액</span>
+                        <span className="font-bold text-stone-800">
+                          {fullGroup.account.totalBalance.toLocaleString()}원
+                        </span>
+                      </div>
+                    )}
+                    {group.nextEvent && (
+                      <div className="flex items-center text-sm text-stone-600 mt-3 pt-3 border-t border-stone-100">
+                        <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                        <span className="truncate">{group.nextEvent.title} ({group.nextEvent.date})</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center">

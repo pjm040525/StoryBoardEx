@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Users, Calendar, Share2, Heart, MessageCircle, Lock, Eye } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Calendar, Share2, Heart, MessageCircle, Lock, Eye, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -16,12 +16,14 @@ import {
 } from '../ui/dialog';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
+import { ReportDialog } from '../report/ReportDialog';
 
 export function GroupPreviewView() {
   const navigate = useNavigate();
   const { groupId } = useParams();
   const [isLiked, setIsLiked] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
   const [joinMessage, setJoinMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -165,6 +167,14 @@ export function GroupPreviewView() {
               className="bg-black/20 hover:bg-black/40 text-white rounded-full"
             >
               <Share2 className="w-6 h-6" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowReportDialog(true)}
+              className="bg-black/20 hover:bg-black/40 text-white rounded-full"
+            >
+              <Flag className="w-6 h-6" />
             </Button>
           </div>
         </div>
@@ -438,6 +448,14 @@ export function GroupPreviewView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Report Dialog */}
+      <ReportDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        type="group"
+        targetName={group.name}
+      />
     </div>
   );
 }

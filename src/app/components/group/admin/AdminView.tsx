@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ChevronRight, Shield, CreditCard, Users, LogOut, AlertTriangle, Crown, Globe, Lock, PieChart, Scale } from 'lucide-react';
+import { ChevronRight, Shield, CreditCard, Users, LogOut, AlertTriangle, Crown, Globe, Lock, PieChart, Scale, Info } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Switch } from '../../ui/switch';
@@ -29,14 +29,12 @@ import { Button } from '../../ui/button';
 import { RadioGroup, RadioGroupItem } from '../../ui/radio-group';
 import { Card, CardContent } from '../../ui/card';
 import {
-  getUserRoleForGroup,
-  canViewShares,
-  canChangeManagementType,
-  canManageMembers,
-  canManageRoles,
-  ROLE_LABELS,
-  ROLE_COLORS,
+  useUserRole,
+  useUserPermissions,
+  getRoleLabel,
+  getRoleColor,
 } from '../../../data/userRoles';
+import { getGroupById, MANAGEMENT_TYPE_INFO } from '../../../data/mockData';
 
 type ManagementType = 'operating' | 'fair';
 
@@ -44,21 +42,19 @@ export function AdminView() {
   const navigate = useNavigate();
   const { groupId } = useParams();
   
-  // 모임별 역할 가져오기
-  const userRole = getUserRoleForGroup(groupId || '1');
+  // 모임 정보 가져오기
+  const group = getGroupById(groupId || '1');
   
-  // 권한 체크
-  const showSharesMenu = canViewShares(userRole);
-  const showManagementTypeMenu = canChangeManagementType(userRole);
-  const showMembersMenu = canManageMembers(userRole) || userRole === 'treasurer'; // 총무도 회비 현황 확인 가능
-  const showRolesMenu = canManageRoles(userRole);
+  // 모임별 역할 가져오기
+  const { userRole, allRoles } = useUserRole(groupId || '1');
+  const permissions = useUserPermissions(groupId || '1');
   
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showManagementTypeDialog, setShowManagementTypeDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [managementType, setManagementType] = useState<ManagementType>('fair');
-  const groupName = '주말 등산 클럽';
-  const currentVisibility = 'searchable';
+  const [managementType, setManagementType] = useState<ManagementType>(group?.account?.managementType || 'fair');
+  const groupName = group?.name || '모임';
+  const currentVisibility = group?.isPublic ? 'searchable' : 'private';
 
   const handleDeleteGroup = () => {
     if (deleteConfirmText !== groupName) {
@@ -75,20 +71,38 @@ export function AdminView() {
     setShowManagementTypeDialog(false);
   };
 
-  // 모임장만 삭제 가능
-  const canDeleteGroup = userRole === 'owner';
+  // 복합 역할 표시
+  const isMultiRole = allRoles.length > 1;
+  const multiRoleLabel = getRoleLabel(groupId || '1');
+  const multiRoleColor = getRoleColor(groupId || '1');
 
   return (
     <div className="space-y-6 pb-20">
       {/* 역할 표시 */}
       <div className="flex justify-end">
-        <Badge className={`${ROLE_COLORS[userRole]} text-xs`}>
-          {ROLE_LABELS[userRole]}
+        <Badge className={`${multiRoleColor} text-xs`}>
+          {multiRoleLabel}
         </Badge>
       </div>
 
-      {/* 모임 관리 - 모임장/운영진만 */}
-      {(userRole === 'owner' || userRole === 'manager') && (
+      {/* 모임 정보 카드 */}
+      {group && (
+        <Card className="bg-gradient-to-r from-stone-800 to-stone-900 text-white border-none">
+          <CardContent className="p-4">
+            <h3 className="font-bold text-lg mb-2">{group.name}</h3>
+            <div className="flex items-center gap-2">
+              <Badge className={group.account.managementType === 'fair' ? 'bg-green-500/20 text-green-300' : 'bg-blue-500/20 text-blue-300'}>
+                {MANAGEMENT_TYPE_INFO[group.account.managementType].name}
+              </Badge>
+              <span className="text-xs text-stone-400">|</span>
+              <span className="text-xs text-stone-400">{group.memberCount}명</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 모임 관리 - 모임장/운영진 */}
+      {permissions.canManageGroup && (
         <div className="bg-white rounded-xl border border-stone-100 divide-y divide-stone-50 overflow-hidden">
           <div className="px-4 py-3 bg-stone-50">
             <h3 className="font-medium text-stone-700">모임 관리</h3>
@@ -149,8 +163,8 @@ export function AdminView() {
         </div>
       )}
 
-      {/* 통장 관리 - 총무/모임장/운영진 */}
-      {showManagementTypeMenu && (
+      {/* 통장 관리 - 총무/모임장만 */}
+      {permissions.canChangeManagementType && (
         <div className="bg-white rounded-xl border border-stone-100 divide-y divide-stone-50 overflow-hidden">
           <div className="px-4 py-3 bg-stone-50">
             <h3 className="font-medium text-stone-700">통장 관리</h3>
@@ -178,8 +192,8 @@ export function AdminView() {
             <ChevronRight className="w-5 h-5 text-stone-300" />
           </button>
 
-          {/* 지분 관리 - 총무/모임장만 */}
-          {showSharesMenu && (
+          {/* 지분 관리 */}
+          {permissions.canManageShares && (
             <Link to="shares" className="block">
               <div className="p-4 flex items-center justify-between hover:bg-stone-50 cursor-pointer">
                 <div className="flex items-center gap-3">
@@ -199,13 +213,13 @@ export function AdminView() {
       )}
 
       {/* 멤버/권한 관리 */}
-      {(showMembersMenu || showRolesMenu) && (
+      {(permissions.canManageMembers || permissions.canAssignRoles) && (
         <div className="bg-white rounded-xl border border-stone-100 divide-y divide-stone-50 overflow-hidden">
           <div className="px-4 py-3 bg-stone-50">
             <h3 className="font-medium text-stone-700">멤버 관리</h3>
           </div>
           
-          {showMembersMenu && (
+          {permissions.canManageMembers && (
             <Link to="members" className="block">
               <div className="p-4 flex items-center justify-between hover:bg-stone-50 cursor-pointer">
                 <div className="flex items-center gap-3">
@@ -228,7 +242,7 @@ export function AdminView() {
           )}
 
           {/* 권한 관리 - 모임장만 */}
-          {showRolesMenu && (
+          {permissions.canAssignRoles && (
             <Link to="roles" className="block">
               <div className="p-4 flex items-center justify-between hover:bg-stone-50 cursor-pointer">
                 <div className="flex items-center gap-3">
@@ -248,7 +262,7 @@ export function AdminView() {
       )}
 
       {/* 알림 설정 - 모임장/운영진만 */}
-      {(userRole === 'owner' || userRole === 'manager') && (
+      {permissions.canManageGroup && (
         <div className="bg-white rounded-xl border border-stone-100 p-4 space-y-6">
           <h3 className="font-bold text-stone-900">알림 설정</h3>
           
@@ -277,7 +291,7 @@ export function AdminView() {
       )}
 
       {/* 위험 영역 - 모임장만 */}
-      {canDeleteGroup && (
+      {userRole === 'owner' && (
         <button 
           onClick={() => setShowDeleteDialog(true)}
           className="w-full p-4 rounded-xl border border-red-100 bg-red-50 text-red-600 font-medium flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
@@ -296,6 +310,23 @@ export function AdminView() {
             모임장, 총무, 운영진만 관리 기능을 사용할 수 있습니다.
           </p>
         </div>
+      )}
+
+      {/* 권한 안내 박스 */}
+      {isMultiRole && (
+        <Card className="border-purple-200 bg-purple-50">
+          <CardContent className="p-4">
+            <div className="flex gap-3">
+              <Info className="w-5 h-5 text-purple-600 shrink-0" />
+              <div className="text-sm text-purple-800">
+                <p className="font-medium">복합 권한 보유</p>
+                <p className="text-xs text-purple-700 mt-1">
+                  운영진과 총무 권한을 동시에 가지고 있어 모든 관련 기능을 사용할 수 있습니다.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Management Type Dialog */}
@@ -321,7 +352,9 @@ export function AdminView() {
                       <p className="text-sm text-stone-600 mb-2">인원 변동이 적은 모임에 적합</p>
                       <ul className="text-xs text-stone-500 space-y-1">
                         <li>• 탈퇴 시 환불 없음</li>
-                        <li>• 간단한 운영비 관리</li>
+                        <li>• 남은 돈 계속 축적</li>
+                        <li>• 운영비로 자유롭게 사용</li>
+                        <li>• 정산 없이 모임 유지</li>
                       </ul>
                     </Label>
                   </div>
@@ -340,8 +373,10 @@ export function AdminView() {
                       </div>
                       <p className="text-sm text-stone-600 mb-2">인원 변동이 많은 모임에 적합</p>
                       <ul className="text-xs text-stone-500 space-y-1">
+                        <li>• 모든 멤버 동일 지분</li>
+                        <li>• 신규 가입 시 기존 멤버 지분만큼 납부</li>
                         <li>• 탈퇴 시 지분만큼 환불</li>
-                        <li>• 개인별 지분 자동 계산</li>
+                        <li>• 정산 시 균등 분배</li>
                       </ul>
                     </Label>
                   </div>

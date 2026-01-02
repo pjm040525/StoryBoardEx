@@ -1,93 +1,154 @@
-// 모임별 사용자 권한 (Mock Data)
-// 실제로는 API에서 가져옴
+export type UserRole = 'owner' | 'treasurer' | 'manager' | 'member' | 'pending';
 
-export type UserRole = 'owner' | 'treasurer' | 'manager' | 'member';
-
-// 각 모임에서의 사용자 역할 (홍길동 기준)
-// 모임 ID별로 다른 역할을 가짐
-export const USER_ROLES_BY_GROUP: Record<string, UserRole> = {
-  '1': 'owner',      // 주말 등산 클럽 - 모임장
-  '2': 'treasurer',  // 강남 독서 모임 - 총무
-  '3': 'manager',    // 개발자 네트워킹 - 운영진
-  '4': 'member',     // 요가 & 명상 클럽 - 일반 회원
-  '5': 'member',     // 영어 회화 스터디 - 일반 회원
-  '6': 'member',     // 주말 러닝 크루 - 일반 회원
-};
-
-// 모임별 사용자 역할 가져오기
-export function getUserRoleForGroup(groupId: string): UserRole {
-  return USER_ROLES_BY_GROUP[groupId] || 'member';
-}
-
-// 역할 라벨
 export const ROLE_LABELS: Record<UserRole, string> = {
   owner: '모임장',
   treasurer: '총무',
   manager: '운영진',
   member: '회원',
+  pending: '가입대기',
 };
 
-// 역할 색상
 export const ROLE_COLORS: Record<UserRole, string> = {
-  owner: 'bg-purple-100 text-purple-700',
-  treasurer: 'bg-green-100 text-green-700',
-  manager: 'bg-blue-100 text-blue-700',
-  member: 'bg-stone-100 text-stone-600',
+  owner: 'bg-orange-500 text-white',
+  treasurer: 'bg-green-500 text-white',
+  manager: 'bg-blue-500 text-white',
+  member: 'bg-stone-500 text-white',
+  pending: 'bg-yellow-500 text-white',
 };
 
-// 역할 아이콘 색상 (배경 없는 버전)
-export const ROLE_ICON_COLORS: Record<UserRole, string> = {
-  owner: 'text-purple-600',
-  treasurer: 'text-green-600',
-  manager: 'text-blue-600',
-  member: 'text-stone-500',
+// 역할별 권한 정의
+export const ROLE_PERMISSIONS = {
+  owner: {
+    canManageGroup: true,      // 모임 설정 관리
+    canManageDues: true,       // 회비 관리 (입금/출금)
+    canWithdraw: true,         // 출금 가능
+    canManageShares: true,     // 지분 관리
+    canManageMembers: true,    // 멤버 관리
+    canDeletePosts: true,      // 게시글 삭제
+    canDeleteComments: true,   // 댓글 삭제
+    canFinalizeSchedule: true, // 일정 마무리
+    canChangeManagementType: true, // 통장 유형 변경
+    canAssignRoles: true,      // 역할 부여
+  },
+  treasurer: {
+    canManageGroup: false,
+    canManageDues: true,
+    canWithdraw: true,
+    canManageShares: true,
+    canManageMembers: false,
+    canDeletePosts: false,
+    canDeleteComments: false,
+    canFinalizeSchedule: true,
+    canChangeManagementType: true,
+    canAssignRoles: false,
+  },
+  manager: {
+    canManageGroup: true,
+    canManageDues: false,
+    canWithdraw: false,
+    canManageShares: false,
+    canManageMembers: true,
+    canDeletePosts: true,
+    canDeleteComments: true,
+    canFinalizeSchedule: true,
+    canChangeManagementType: false,
+    canAssignRoles: false,
+  },
+  member: {
+    canManageGroup: false,
+    canManageDues: false,
+    canWithdraw: false,
+    canManageShares: false,
+    canManageMembers: false,
+    canDeletePosts: false,
+    canDeleteComments: false,
+    canFinalizeSchedule: false,
+    canChangeManagementType: false,
+    canAssignRoles: false,
+  },
+  pending: {
+    canManageGroup: false,
+    canManageDues: false,
+    canWithdraw: false,
+    canManageShares: false,
+    canManageMembers: false,
+    canDeletePosts: false,
+    canDeleteComments: false,
+    canFinalizeSchedule: false,
+    canChangeManagementType: false,
+    canAssignRoles: false,
+  },
 };
 
-// 권한 체크 함수들
-export function canWithdraw(role: UserRole): boolean {
-  // 보내기 권한: 모임장, 총무 (모임장은 총무 권한 포함)
-  return role === 'owner' || role === 'treasurer';
-}
-
-export function canViewShares(role: UserRole): boolean {
-  // 지분 관리 조회: 모임장, 총무 (모임장은 총무 권한 포함)
-  return role === 'owner' || role === 'treasurer';
-}
-
-export function canFinalizeSchedule(role: UserRole): boolean {
-  // 일정 마무리: 모임장, 총무, 운영진
-  return role === 'owner' || role === 'treasurer' || role === 'manager';
-}
-
-export function canChangeManagementType(role: UserRole): boolean {
-  // 통장 유형 변경: 모임장, 총무만 (모임장은 총무 권한 포함)
-  return role === 'owner' || role === 'treasurer';
-}
-
-export function canManageMembers(role: UserRole): boolean {
-  // 멤버 관리: 모임장, 운영진
-  return role === 'owner' || role === 'manager';
-}
-
-export function canManageRoles(role: UserRole): boolean {
-  // 권한 관리: 모임장만
-  return role === 'owner';
-}
-
-export function canEditGroup(role: UserRole): boolean {
-  // 모임 정보 수정: 모임장, 운영진
-  return role === 'owner' || role === 'manager';
-}
-
-export function canDeleteGroup(role: UserRole): boolean {
-  // 모임 삭제: 모임장만
-  return role === 'owner';
-}
-
-// 역할 설명
-export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  owner: '모든 권한 (총무+운영진 권한 포함)',
-  treasurer: '회비 보내기, 지분 관리, 정산',
-  manager: '멤버 관리, 일정 마무리, 게시글 관리',
-  member: '기본 권한 (조회, 참여, 채우기)',
+// 각 모임별 사용자 역할 (복수 역할 지원)
+// groupId -> roles 배열
+const MOCK_USER_ROLES: Record<string, UserRole[]> = {
+  '1': ['owner'],                  // 주말 등산 클럽 - 모임장
+  '2': ['treasurer'],              // 강남 독서 모임 - 총무
+  '3': ['manager', 'treasurer'],   // 개발자 네트워킹 - 운영진+총무 (복합 권한)
+  '4': ['member'],                 // 요가 & 명상 클럽 - 일반 회원
+  '5': ['member'],                 // 영어 회화 스터디 - 일반 회원
+  '6': ['member'],                 // 주말 러닝 크루 - 일반 회원
+  'public1': ['member'],
+  'public2': ['member'],
 };
+
+// 사용자의 주 역할 가져오기 (표시용)
+export function useUserRole(groupId: string) {
+  const roles = MOCK_USER_ROLES[groupId] || ['member'];
+  // 주 역할은 우선순위: owner > treasurer > manager > member
+  const primaryRole = roles.includes('owner') ? 'owner' :
+                     roles.includes('treasurer') ? 'treasurer' :
+                     roles.includes('manager') ? 'manager' : 'member';
+  return { userRole: primaryRole, allRoles: roles };
+}
+
+// 사용자가 특정 권한을 가지고 있는지 확인
+export function useUserPermissions(groupId: string) {
+  const { allRoles } = useUserRole(groupId);
+  
+  // 모든 역할의 권한을 합산
+  const permissions = {
+    canManageGroup: false,
+    canManageDues: false,
+    canWithdraw: false,
+    canManageShares: false,
+    canManageMembers: false,
+    canDeletePosts: false,
+    canDeleteComments: false,
+    canFinalizeSchedule: false,
+    canChangeManagementType: false,
+    canAssignRoles: false,
+  };
+
+  for (const role of allRoles) {
+    const rolePerms = ROLE_PERMISSIONS[role];
+    for (const key of Object.keys(permissions) as (keyof typeof permissions)[]) {
+      if (rolePerms[key]) {
+        permissions[key] = true;
+      }
+    }
+  }
+
+  return permissions;
+}
+
+// 역할 표시 라벨 (복합 역할)
+export function getRoleLabel(groupId: string): string {
+  const roles = MOCK_USER_ROLES[groupId] || ['member'];
+  if (roles.includes('owner')) return '모임장';
+  if (roles.includes('treasurer') && roles.includes('manager')) return '운영진+총무';
+  if (roles.includes('treasurer')) return '총무';
+  if (roles.includes('manager')) return '운영진';
+  return '회원';
+}
+
+// 역할 색상 (복합 역할)
+export function getRoleColor(groupId: string): string {
+  const roles = MOCK_USER_ROLES[groupId] || ['member'];
+  if (roles.includes('owner')) return 'bg-orange-500 text-white';
+  if (roles.includes('treasurer') && roles.includes('manager')) return 'bg-purple-500 text-white';
+  if (roles.includes('treasurer')) return 'bg-green-500 text-white';
+  if (roles.includes('manager')) return 'bg-blue-500 text-white';
+  return 'bg-stone-500 text-white';
+}

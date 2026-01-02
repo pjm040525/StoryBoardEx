@@ -1,27 +1,31 @@
 import { useParams } from 'react-router-dom';
-import { Wallet, ArrowDownLeft, ArrowUpRight, History, Receipt, PieChart, Info, ChevronRight } from 'lucide-react';
+import { Wallet, ArrowDownLeft, ArrowUpRight, History, Receipt, PieChart, Info, ChevronRight, Users, AlertCircle } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Card, CardContent } from '../../ui/card';
 import { Link } from 'react-router-dom';
 import { Badge } from '../../ui/badge';
 import { Progress } from '../../ui/progress';
 import { 
-  getUserRoleForGroup, 
-  canWithdraw, 
-  canViewShares,
-  ROLE_LABELS, 
-  ROLE_COLORS 
+  useUserRole, 
+  useUserPermissions,
+  getRoleLabel,
+  getRoleColor,
 } from '../../../data/userRoles';
+import { getGroupById, MANAGEMENT_TYPE_INFO } from '../../../data/mockData';
 
 export function DuesView() {
   const { groupId } = useParams();
   
+  // 모임 정보 가져오기
+  const group = getGroupById(groupId || '1');
+  
   // 모임별 역할 가져오기
-  const userRole = getUserRoleForGroup(groupId || '1');
+  const { userRole } = useUserRole(groupId || '1');
+  const permissions = useUserPermissions(groupId || '1');
   
   // 권한 체크
-  const showWithdrawButton = canWithdraw(userRole);
-  const showSharesLink = canViewShares(userRole);
+  const showWithdrawButton = permissions.canWithdraw;
+  const showSharesLink = permissions.canManageShares;
 
   const transactions = [
     { id: 1, title: '4월 정기 산행 뒤풀이', amount: -150000, date: '2024.04.12', type: 'expense' },
@@ -29,20 +33,26 @@ export function DuesView() {
     { id: 3, title: '김철수 회비 입금', amount: 30000, date: '2024.04.10', type: 'income' },
   ];
 
-  // 통장 정보
-  const accountInfo = {
-    totalBalance: 1250000,
-    managementType: 'fair' as 'operating' | 'fair',
-    myShare: 85000,
-    sharePercent: 6.8,
-  };
+  // 그룹이 없으면 에러 표시
+  if (!group) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+        <h3 className="text-lg font-medium text-stone-900">모임을 찾을 수 없습니다</h3>
+        <p className="text-sm text-stone-500 mt-1">존재하지 않는 모임입니다.</p>
+      </div>
+    );
+  }
+
+  const { account } = group;
+  const typeInfo = MANAGEMENT_TYPE_INFO[account.managementType];
 
   return (
     <div className="space-y-6 pb-20">
       {/* User Role Badge */}
       <div className="flex justify-end">
-        <Badge className={`${ROLE_COLORS[userRole]} text-xs`}>
-          {ROLE_LABELS[userRole]}
+        <Badge className={`${getRoleColor(groupId || '1')} text-xs`}>
+          {getRoleLabel(groupId || '1')}
         </Badge>
       </div>
 
@@ -53,7 +63,7 @@ export function DuesView() {
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-stone-400 text-sm mb-1">총 모임 통장 잔액</p>
-              <h2 className="text-3xl font-bold">{accountInfo.totalBalance.toLocaleString()}원</h2>
+              <h2 className="text-3xl font-bold">{account.totalBalance.toLocaleString()}원</h2>
             </div>
             <div className="p-2 bg-white/10 rounded-full">
               <Wallet className="w-6 h-6 text-orange-400" />
@@ -63,26 +73,61 @@ export function DuesView() {
           {/* Management Type Badge */}
           <div className="mb-4">
             <Badge className={
-              accountInfo.managementType === 'fair' 
+              account.managementType === 'fair' 
                 ? 'bg-green-500/20 text-green-300 border-green-500/30' 
                 : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
             }>
-              {accountInfo.managementType === 'fair' ? '공정정산형' : '운영비형'}
+              {typeInfo.name}
             </Badge>
           </div>
 
-          {/* My Share (공정정산형일 때만) */}
-          {accountInfo.managementType === 'fair' && (
+          {/* 공정정산형: 지분 정보 */}
+          {account.managementType === 'fair' && (
             <div className="bg-white/10 rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="w-4 h-4 text-green-400" />
+                <span className="text-sm text-stone-300">모든 멤버 동일 지분</span>
+              </div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-stone-400 text-sm">내 지분</span>
-                <span className="text-xl font-bold text-orange-400">
-                  {accountInfo.myShare.toLocaleString()}원
+                <span className="text-stone-400 text-sm">1인당 지분</span>
+                <span className="text-xl font-bold text-green-400">
+                  {(account.perPersonShare || 0).toLocaleString()}원
                 </span>
               </div>
-              <Progress value={accountInfo.sharePercent * 10} className="h-2 bg-white/10" />
+              <div className="flex justify-between items-center text-xs text-stone-500 mt-3 pt-3 border-t border-white/10">
+                <span>멤버 수: {account.memberCount}명</span>
+                <span>신규 가입비: {(account.entryFee || 0).toLocaleString()}원</span>
+              </div>
+            </div>
+          )}
+
+          {/* 운영비형: 축적 정보 */}
+          {account.managementType === 'operating' && (
+            <div className="bg-white/10 rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Wallet className="w-4 h-4 text-blue-400" />
+                <span className="text-sm text-stone-300">운영비 축적형</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-stone-400 block mb-1">총 입금</span>
+                  <span className="text-blue-400 font-medium">
+                    {(account.totalDeposited || 0).toLocaleString()}원
+                  </span>
+                </div>
+                <div>
+                  <span className="text-stone-400 block mb-1">총 사용</span>
+                  <span className="text-orange-400 font-medium">
+                    {(account.totalUsed || 0).toLocaleString()}원
+                  </span>
+                </div>
+              </div>
+              <Progress 
+                value={(account.totalBalance / (account.totalDeposited || 1)) * 100} 
+                className="h-2 bg-white/10 mt-3" 
+              />
               <p className="text-xs text-stone-500 text-right mt-1">
-                전체 대비 {accountInfo.sharePercent}%
+                잔액 {((account.totalBalance / (account.totalDeposited || 1)) * 100).toFixed(0)}%
               </p>
             </div>
           )}
@@ -145,7 +190,7 @@ export function DuesView() {
 
       {/* Share Management Link (총무/모임장만) */}
       {showSharesLink && (
-        <Link to="../admin/shares">
+        <Link to="shares">
           <Card className="border-green-200 bg-green-50 hover:bg-green-100 transition-colors cursor-pointer">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -165,23 +210,24 @@ export function DuesView() {
         </Link>
       )}
 
-      {/* Info Box */}
-      {accountInfo.managementType === 'fair' && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="p-4">
-            <div className="flex gap-3">
-              <Info className="w-5 h-5 text-amber-600 shrink-0" />
-              <div className="text-sm text-amber-800">
-                <p className="font-medium">공정정산형 안내</p>
-                <p className="text-amber-700 mt-1">
-                  탈퇴 시 지분만큼 환불받을 수 있습니다.
-                  정산 금액이 안 나누어 떨어지면 올림 처리됩니다.
-                </p>
-              </div>
+      {/* Info Box - 통장 유형 안내 */}
+      <Card className={account.managementType === 'fair' ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50'}>
+        <CardContent className="p-4">
+          <div className="flex gap-3">
+            <Info className={`w-5 h-5 shrink-0 ${account.managementType === 'fair' ? 'text-green-600' : 'text-blue-600'}`} />
+            <div className={`text-sm ${account.managementType === 'fair' ? 'text-green-800' : 'text-blue-800'}`}>
+              <p className="font-medium">{typeInfo.name} 안내</p>
+              <ul className="mt-2 space-y-1">
+                {typeInfo.features.map((feature, i) => (
+                  <li key={i} className={`text-xs ${account.managementType === 'fair' ? 'text-green-700' : 'text-blue-700'}`}>
+                    • {feature}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* History */}
       <div className="space-y-4">
