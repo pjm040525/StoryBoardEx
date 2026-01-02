@@ -66,18 +66,11 @@ export function HomeView() {
   return (
     <div className="p-4 space-y-6 pb-24">
       <header className="flex justify-between items-center py-2">
-        <h1 className="text-2xl font-bold text-stone-800">나의 모임</h1>
+        <div className="flex items-center gap-2">
+          <img src="/logo.svg" alt="모임" className="w-8 h-8" />
+          <h1 className="text-2xl font-bold text-stone-800">나의 모임</h1>
+        </div>
         <div className="flex items-center gap-1">
-          <Link to="/invite-code">
-            <Button variant="ghost" size="icon" className="text-stone-500">
-              <KeyRound className="w-5 h-5" />
-            </Button>
-          </Link>
-          <Link to="/explore">
-            <Button variant="ghost" size="icon" className="text-stone-500">
-              <Compass className="w-6 h-6" />
-            </Button>
-          </Link>
           <Link to="/notifications">
             <Button variant="ghost" size="icon" className="text-stone-500 relative">
               <span className="sr-only">알림</span>
@@ -96,6 +89,22 @@ export function HomeView() {
           </Link>
         </div>
       </header>
+
+      {/* Quick Actions */}
+      <div className="flex gap-2">
+        <Link to="/explore" className="flex-1">
+          <Button variant="outline" className="w-full h-12 rounded-xl border-orange-200 hover:bg-orange-50 hover:border-orange-300">
+            <Compass className="w-5 h-5 mr-2 text-orange-500" />
+            <span className="text-stone-700">모임 둘러보기</span>
+          </Button>
+        </Link>
+        <Link to="/invite-code" className="flex-1">
+          <Button variant="outline" className="w-full h-12 rounded-xl border-stone-200 hover:bg-stone-50">
+            <KeyRound className="w-5 h-5 mr-2 text-stone-500" />
+            <span className="text-stone-700">초대코드 입력</span>
+          </Button>
+        </Link>
+      </div>
 
       {/* Search */}
       <div className="space-y-3">

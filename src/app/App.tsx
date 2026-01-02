@@ -42,6 +42,9 @@ import { InviteCodeView } from "./components/invite/InviteCodeView";
 // Common
 import { NoPermissionView } from "./components/common/NoPermissionView";
 
+// System Admin
+import { SystemAdminView } from "./components/admin/SystemAdminView";
+
 // Group Pages
 import { GroupLayout } from "./components/group/GroupLayout";
 import { GroupMainView } from "./components/group/GroupMainView";
@@ -49,12 +52,14 @@ import { ScheduleListView } from "./components/group/schedule/ScheduleListView";
 import { ScheduleDetailView } from "./components/group/schedule/ScheduleDetailView";
 import { VoteCreateView } from "./components/group/schedule/VoteCreateView";
 import { VoteDetailView } from "./components/group/schedule/VoteDetailView";
+import { ScheduleFinalizeView } from "./components/group/schedule/ScheduleFinalizeView";
 import { DuesView } from "./components/group/dues/DuesView";
 import { DepositView } from "./components/group/dues/DepositView";
 import { WithdrawView } from "./components/group/dues/WithdrawView";
 import { SettlementRequestView } from "./components/group/dues/SettlementRequestView";
 import { DuesRulesView } from "./components/group/dues/DuesRulesView";
 import { DuesHistoryView } from "./components/group/dues/DuesHistoryView";
+import { ShareManagementView } from "./components/group/dues/ShareManagementView";
 import { StoriesView } from "./components/group/stories/StoriesView";
 import { CreateStoryView } from "./components/group/stories/CreateStoryView";
 import { StoryDetailView } from "./components/group/stories/StoryDetailView";
@@ -142,6 +147,9 @@ export default function App() {
 
             {/* No Permission */}
             <Route path="/no-permission" element={<NoPermissionView />} />
+
+            {/* System Admin (시스템 관리자) */}
+            <Route path="/system-admin" element={<SystemAdminView />} />
           </Route>
 
           {/* Group Pages */}
@@ -151,6 +159,7 @@ export default function App() {
             {/* Schedule */}
             <Route path="schedule" element={<ScheduleListView />} />
             <Route path="schedule/:scheduleId" element={<ScheduleDetailView />} />
+            <Route path="schedule/:scheduleId/finalize" element={<ScheduleFinalizeView />} />
             <Route path="schedule/create-vote" element={<VoteCreateView />} />
             <Route path="vote/:voteId" element={<VoteDetailView />} />
             
@@ -179,6 +188,7 @@ export default function App() {
             <Route path="admin/members" element={<MemberManagementView />} />
             <Route path="admin/roles" element={<RoleManagementView />} />
             <Route path="admin/privacy" element={<GroupPrivacySettingsView />} />
+            <Route path="admin/shares" element={<ShareManagementView />} />
           </Route>
 
           {/* 404 Page */}

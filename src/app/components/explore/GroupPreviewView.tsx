@@ -346,6 +346,25 @@ export function GroupPreviewView() {
           )}
         </div>
 
+        {/* 회비 현황 - 회원 전용 */}
+        <div className="bg-white rounded-xl p-4 border border-stone-100">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-stone-900">회비 현황</h3>
+            <Badge variant="secondary" className="bg-stone-100 text-stone-600">
+              <Lock className="w-3 h-3 mr-1" />
+              회원 전용
+            </Badge>
+          </div>
+          <div className="py-6 text-center">
+            <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Lock className="w-6 h-6 text-stone-400" />
+            </div>
+            <p className="text-sm text-stone-500">
+              회비 현황은 모임 회원만<br/>확인할 수 있습니다
+            </p>
+          </div>
+        </div>
+
         {/* Gallery - 게시글 공개 시에만 표시 */}
         {group.privacySettings.showPostsToNonMembers && group.gallery.length > 0 && (
           <div className="bg-white rounded-xl p-4 border border-stone-100">

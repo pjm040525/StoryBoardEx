@@ -1,16 +1,27 @@
 import React from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Folder, Heart, MessageCircle, Plus, Camera } from 'lucide-react';
-import { Card, CardContent } from '../../ui/card';
+import { Folder, Heart, MessageCircle, Plus, Camera, ArrowUpDown } from 'lucide-react';
+import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../ui/dropdown-menu';
+
+type SortType = 'latest' | 'oldest' | 'popular';
 
 export function StoriesView() {
+  const [sortBy, setSortBy] = useState<SortType>('latest');
+
   const folders = [
     { id: '1', title: '4월 관악산 산행', count: 24, date: '2024.04.12', cover: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=400&fit=crop' },
     { id: '2', title: '3월 신입환영회', count: 15, date: '2024.03.20', cover: 'https://images.unsplash.com/photo-1511632765486-a01980968a0c?w=400&h=400&fit=crop' },
   ];
 
-  const recentPosts = [
+  const allPosts = [
     { 
       id: '1', 
       user: '김산악', 
@@ -19,7 +30,8 @@ export function StoriesView() {
       content: '날씨가 너무 좋았던 하루! 다들 고생하셨습니다 ㅎㅎ',
       likes: 12,
       comments: 4,
-      date: '2시간 전'
+      date: '2024-04-12T14:00:00',
+      dateDisplay: '2시간 전'
     },
     { 
       id: '2', 
@@ -29,9 +41,52 @@ export function StoriesView() {
       content: '정말 즐거웠어요! 다음 모임도 기대됩니다 🎉',
       likes: 8,
       comments: 2,
-      date: '5시간 전'
-    }
+      date: '2024-04-12T09:00:00',
+      dateDisplay: '5시간 전'
+    },
+    { 
+      id: '3', 
+      user: '박철수', 
+      userImg: '',
+      image: 'https://images.unsplash.com/photo-1502224562085-639556652f33?w=600&auto=format&fit=crop',
+      content: '첫 참여인데 너무 재밌었어요~ 다음에도 꼭 갈게요!',
+      likes: 25,
+      comments: 7,
+      date: '2024-04-11T18:00:00',
+      dateDisplay: '어제'
+    },
+    { 
+      id: '4', 
+      user: '홍길동', 
+      userImg: '',
+      image: 'https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?w=600&auto=format&fit=crop',
+      content: '단체 사진입니다~ 모두 수고하셨어요 👏',
+      likes: 30,
+      comments: 10,
+      date: '2024-04-10T20:00:00',
+      dateDisplay: '2일 전'
+    },
   ];
+
+  // 정렬된 게시글
+  const sortedPosts = [...allPosts].sort((a, b) => {
+    switch (sortBy) {
+      case 'latest':
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      case 'oldest':
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      case 'popular':
+        return (b.likes + b.comments) - (a.likes + a.comments);
+      default:
+        return 0;
+    }
+  });
+
+  const sortLabels: Record<SortType, string> = {
+    latest: '최신순',
+    oldest: '오래된순',
+    popular: '인기순',
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -70,9 +125,34 @@ export function StoriesView() {
 
       {/* Feed */}
       <section>
-        <h3 className="font-bold text-lg text-stone-800 px-1 mb-3">최근 게시글</h3>
+        <div className="flex justify-between items-center px-1 mb-3">
+          <h3 className="font-bold text-lg text-stone-800">게시글</h3>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                <ArrowUpDown className="w-4 h-4" />
+                {sortLabels[sortBy]}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setSortBy('latest')}>
+                최신순
+                {sortBy === 'latest' && ' ✓'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('oldest')}>
+                오래된순
+                {sortBy === 'oldest' && ' ✓'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('popular')}>
+                인기순 (좋아요+댓글)
+                {sortBy === 'popular' && ' ✓'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         <div className="space-y-6">
-          {recentPosts.map(post => (
+          {sortedPosts.map(post => (
             <Link to={post.id} key={post.id}>
               <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <div className="p-3 flex items-center gap-3">
@@ -83,7 +163,7 @@ export function StoriesView() {
                   />
                   <div>
                     <p className="font-bold text-sm text-stone-900">{post.user}</p>
-                    <p className="text-xs text-stone-400">{post.date}</p>
+                    <p className="text-xs text-stone-400">{post.dateDisplay}</p>
                   </div>
                 </div>
                 <div className="aspect-[4/3] bg-stone-100">

@@ -1,34 +1,104 @@
-import { Plus, Wallet, ArrowDownLeft, ArrowUpRight, History, Receipt } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Wallet, ArrowDownLeft, ArrowUpRight, History, Receipt, PieChart, Users, Info, ChevronRight } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Card, CardContent } from '../../ui/card';
 import { Link } from 'react-router-dom';
+import { Badge } from '../../ui/badge';
+import { Progress } from '../../ui/progress';
+
+type UserRole = 'owner' | 'treasurer' | 'manager' | 'member';
 
 export function DuesView() {
+  const [userRole, setUserRole] = useState<UserRole>('member');
+
+  useEffect(() => {
+    // localStorage에서 역할 가져오기 (테스트 계정 시스템)
+    const storedRole = localStorage.getItem('userRole') as UserRole;
+    if (storedRole) {
+      setUserRole(storedRole);
+    }
+  }, []);
+
   const transactions = [
     { id: 1, title: '4월 정기 산행 뒤풀이', amount: -150000, date: '2024.04.12', type: 'expense' },
     { id: 2, title: '홍길동 회비 입금', amount: 30000, date: '2024.04.10', type: 'income' },
     { id: 3, title: '김철수 회비 입금', amount: 30000, date: '2024.04.10', type: 'income' },
   ];
 
-  // 현재 사용자의 역할 (실제로는 Context나 API에서)
-  const currentUserRole: 'owner' | 'treasurer' | 'manager' | 'member' = 'owner';
-  const canWithdraw = currentUserRole === 'owner' || currentUserRole === 'treasurer';
+  // 통장 정보
+  const accountInfo = {
+    totalBalance: 1250000,
+    managementType: 'fair' as 'operating' | 'fair',
+    myShare: 85000, // 내 지분
+    sharePercent: 6.8,
+  };
+
+  const canWithdraw = userRole === 'owner' || userRole === 'treasurer';
+  const canViewShares = userRole === 'owner' || userRole === 'treasurer';
+
+  const roleLabels: Record<UserRole, string> = {
+    owner: '모임장',
+    treasurer: '총무',
+    manager: '운영진',
+    member: '회원',
+  };
+
+  const roleColors: Record<UserRole, string> = {
+    owner: 'bg-purple-100 text-purple-700',
+    treasurer: 'bg-green-100 text-green-700',
+    manager: 'bg-blue-100 text-blue-700',
+    member: 'bg-stone-100 text-stone-600',
+  };
 
   return (
     <div className="space-y-6 pb-20">
+      {/* User Role Badge */}
+      <div className="flex justify-end">
+        <Badge className={`${roleColors[userRole]} text-xs`}>
+          {roleLabels[userRole]}
+        </Badge>
+      </div>
+
       {/* Balance Card */}
-      <Card className="bg-stone-900 text-white border-none shadow-lg rounded-2xl overflow-hidden relative">
+      <Card className="bg-gradient-to-br from-stone-900 to-stone-800 text-white border-none shadow-lg rounded-2xl overflow-hidden relative">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
         <CardContent className="p-6 relative z-10">
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-stone-400 text-sm mb-1">총 모임 통장 잔액</p>
-              <h2 className="text-3xl font-bold">1,250,000원</h2>
+              <h2 className="text-3xl font-bold">{accountInfo.totalBalance.toLocaleString()}원</h2>
             </div>
             <div className="p-2 bg-white/10 rounded-full">
               <Wallet className="w-6 h-6 text-orange-400" />
             </div>
           </div>
+
+          {/* Management Type Badge */}
+          <div className="mb-4">
+            <Badge className={
+              accountInfo.managementType === 'fair' 
+                ? 'bg-green-500/20 text-green-300 border-green-500/30' 
+                : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+            }>
+              {accountInfo.managementType === 'fair' ? '공정정산형' : '운영비형'}
+            </Badge>
+          </div>
+
+          {/* My Share (공정정산형일 때만) */}
+          {accountInfo.managementType === 'fair' && (
+            <div className="bg-white/10 rounded-xl p-4 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-stone-400 text-sm">내 지분</span>
+                <span className="text-xl font-bold text-orange-400">
+                  {accountInfo.myShare.toLocaleString()}원
+                </span>
+              </div>
+              <Progress value={accountInfo.sharePercent * 10} className="h-2 bg-white/10" />
+              <p className="text-xs text-stone-500 text-right mt-1">
+                전체 대비 {accountInfo.sharePercent}%
+              </p>
+            </div>
+          )}
           
           <div className="flex gap-4">
             <Link to="deposit" className="flex-1">
@@ -82,6 +152,46 @@ export function DuesView() {
           </Button>
         </Link>
       </div>
+
+      {/* Share Management Link (총무/모임장만) */}
+      {canViewShares && (
+        <Link to="../admin/shares">
+          <Card className="border-green-200 bg-green-50 hover:bg-green-100 transition-colors cursor-pointer">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <PieChart className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-green-900">지분 관리</p>
+                    <p className="text-xs text-green-700">전체 멤버의 지분 현황 확인</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
+
+      {/* Info Box */}
+      {accountInfo.managementType === 'fair' && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex gap-3">
+              <Info className="w-5 h-5 text-amber-600 shrink-0" />
+              <div className="text-sm text-amber-800">
+                <p className="font-medium">공정정산형 안내</p>
+                <p className="text-amber-700 mt-1">
+                  탈퇴 시 지분만큼 환불받을 수 있습니다.
+                  정산 금액이 안 나누어 떨어지면 올림 처리됩니다.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* History */}
       <div className="space-y-4">
