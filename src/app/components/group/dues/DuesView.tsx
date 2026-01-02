@@ -190,7 +190,7 @@ export function DuesView() {
 
       {/* Share Management Link (총무/모임장만) */}
       {showSharesLink && (
-        <Link to="shares">
+        <Link to="../admin/shares">
           <Card className="border-green-200 bg-green-50 hover:bg-green-100 transition-colors cursor-pointer">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
