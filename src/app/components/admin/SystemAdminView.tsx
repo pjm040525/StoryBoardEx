@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import * as React from 'react';
 import { 
   ArrowLeft, 
   Shield, 
@@ -106,6 +107,40 @@ export function SystemAdminView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 시스템 관리자 권한 체크
+  useEffect(() => {
+    const checkAdmin = () => {
+      const adminStatus = localStorage.getItem('isSystemAdmin');
+      if (adminStatus !== 'true') {
+        toast.error('시스템 관리자 권한이 필요합니다');
+        navigate('/login');
+        return;
+      }
+      setIsAdmin(true);
+      setIsLoading(false);
+    };
+    checkAdmin();
+  }, [navigate]);
+
+  // 로딩 중일 때
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-12 h-12 text-red-500 mx-auto mb-4 animate-pulse" />
+          <p className="text-stone-600">권한 확인 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 관리자가 아닌 경우 (이미 리다이렉트되지만 혹시 모를 경우를 위해)
+  if (!isAdmin) {
+    return null;
+  }
   
   // 제재 관련 상태
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);

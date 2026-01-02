@@ -82,22 +82,23 @@ export const ROLE_PERMISSIONS = {
 
 // 각 모임별 사용자 역할 (복수 역할 지원)
 // groupId -> roles 배열
+// ★★★ mockData.ts의 myRole과 일치해야 함 ★★★
 const MOCK_USER_ROLES: Record<string, UserRole[]> = {
   '1': ['owner'],                  // 주말 등산 클럽 - 모임장
   '2': ['treasurer'],              // 강남 독서 모임 - 총무
   '3': ['manager', 'treasurer'],   // 개발자 네트워킹 - 운영진+총무 (복합 권한)
   '4': ['member'],                 // 요가 & 명상 클럽 - 일반 회원
   '5': ['member'],                 // 영어 회화 스터디 - 일반 회원
-  '6': ['member'],                 // 주말 러닝 크루 - 일반 회원
+  '6': ['manager'],                // 주말 러닝 크루 - 운영진 ★ mockData와 일치
   'public1': ['member'],
   'public2': ['member'],
 };
 
 // 사용자의 주 역할 가져오기 (표시용)
-export function useUserRole(groupId: string) {
+export function useUserRole(groupId: string): { userRole: UserRole; allRoles: UserRole[] } {
   const roles = MOCK_USER_ROLES[groupId] || ['member'];
   // 주 역할은 우선순위: owner > treasurer > manager > member
-  const primaryRole = roles.includes('owner') ? 'owner' :
+  const primaryRole: UserRole = roles.includes('owner') ? 'owner' :
                      roles.includes('treasurer') ? 'treasurer' :
                      roles.includes('manager') ? 'manager' : 'member';
   return { userRole: primaryRole, allRoles: roles };
@@ -161,3 +162,14 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   member: '일반적인 모임 활동이 가능합니다.',
   pending: '가입 승인 대기 중입니다.',
 };
+
+// 역할 배지 정보
+export function getRoleBadgeInfo(groupId: string) {
+  const roles = MOCK_USER_ROLES[groupId] || ['member'];
+  return {
+    label: getRoleLabel(groupId),
+    color: getRoleColor(groupId),
+    roles,
+    isMultiRole: roles.length > 1,
+  };
+}
