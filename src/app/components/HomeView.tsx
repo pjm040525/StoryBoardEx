@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Plus, Bell, Search, X, Users, Compass, KeyRound, Crown, Wallet, Shield, Coins } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Plus, Bell, Search, X, Users, Compass, KeyRound, Crown, Wallet, Shield, Coins, ShieldAlert } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { MOCK_GROUPS, Group } from '../data/mockData';
-import { getRoleLabel, getRoleColor, UserRole } from '../data/userRoles';
+import { getRoleLabel, getRoleColor } from '../data/userRoles';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
@@ -45,10 +45,18 @@ function RoleIcon({ role }: { role: string }) {
 }
 
 export function HomeView() {
+  const navigate = useNavigate();
   const unreadNotifications = 2;
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'club' | 'meetup' | 'study'>('all');
   const [searchScope, setSearchScope] = useState<'my' | 'all'>('my');
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
+
+  // 시스템 관리자 확인
+  useEffect(() => {
+    const adminStatus = localStorage.getItem('isSystemAdmin');
+    setIsSystemAdmin(adminStatus === 'true');
+  }, []);
 
   // 내 모임 필터링
   const filteredMyGroups = MOCK_GROUPS.filter(group => {
@@ -88,6 +96,17 @@ export function HomeView() {
           <h1 className="text-2xl font-bold text-stone-800">나의 모임</h1>
         </div>
         <div className="flex items-center gap-1">
+          {/* 시스템 관리자 버튼 */}
+          {isSystemAdmin && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/system-admin')}
+              className="text-red-500 hover:bg-red-50"
+            >
+              <ShieldAlert className="w-6 h-6" />
+            </Button>
+          )}
           <Link to="/notifications">
             <Button variant="ghost" size="icon" className="text-stone-500 relative">
               <span className="sr-only">알림</span>
@@ -106,6 +125,27 @@ export function HomeView() {
           </Link>
         </div>
       </header>
+
+      {/* System Admin Banner */}
+      {isSystemAdmin && (
+        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="w-6 h-6" />
+            <div>
+              <p className="font-bold">시스템 관리자 모드</p>
+              <p className="text-xs text-red-100">모든 모임과 회원을 관리할 수 있습니다</p>
+            </div>
+          </div>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={() => navigate('/system-admin')}
+            className="bg-white text-red-600 hover:bg-red-50"
+          >
+            관리 페이지
+          </Button>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="flex gap-2">
@@ -303,6 +343,15 @@ export function HomeView() {
                         <span className="text-stone-500">통장 잔액</span>
                         <span className="font-bold text-stone-800">
                           {fullGroup.account.totalBalance.toLocaleString()}원
+                        </span>
+                      </div>
+                    )}
+                    {/* 1인당 지분 - 공정정산형만 표시 */}
+                    {fullGroup?.account?.managementType === 'fair' && fullGroup.account.perPersonShare && (
+                      <div className="flex items-center justify-between text-xs py-1 px-3 bg-green-50 rounded-lg mb-3">
+                        <span className="text-green-600">1인당 지분</span>
+                        <span className="font-bold text-green-700">
+                          {fullGroup.account.perPersonShare.toLocaleString()}원
                         </span>
                       </div>
                     )}

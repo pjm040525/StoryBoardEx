@@ -152,3 +152,12 @@ export function getRoleColor(groupId: string): string {
   if (roles.includes('manager')) return 'bg-blue-500 text-white';
   return 'bg-stone-500 text-white';
 }
+
+// 역할 설명
+export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  owner: '모든 권한을 가진 모임 관리자입니다.',
+  treasurer: '회비 관리, 지분 확인, 출금이 가능합니다.',
+  manager: '멤버 관리, 게시글/댓글 삭제가 가능합니다.',
+  member: '일반적인 모임 활동이 가능합니다.',
+  pending: '가입 승인 대기 중입니다.',
+};
