@@ -5,10 +5,10 @@ import { Card, CardContent } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Link } from 'react-router-dom';
 import { 
-  getUserRoleForGroup, 
-  canFinalizeSchedule,
-  ROLE_LABELS, 
-  ROLE_COLORS 
+  useUserRole,
+  useUserPermissions,
+  getRoleLabel,
+  getRoleColor,
 } from '../../../data/userRoles';
 
 interface Schedule {
@@ -28,10 +28,11 @@ export function ScheduleListView() {
   const { groupId } = useParams();
   
   // 모임별 역할 가져오기
-  const userRole = getUserRoleForGroup(groupId || '1');
+  const { userRole } = useUserRole(groupId || '1');
+  const permissions = useUserPermissions(groupId || '1');
   
   // 일정 마무리 권한 체크
-  const showFinalizeButton = canFinalizeSchedule(userRole);
+  const showFinalizeButton = permissions.canFinalizeSchedule;
 
   const schedules: Schedule[] = [
     {
@@ -101,8 +102,8 @@ export function ScheduleListView() {
     <div className="space-y-4 pb-20">
       {/* User Role Badge */}
       <div className="flex justify-end">
-        <Badge className={`${ROLE_COLORS[userRole]} text-xs`}>
-          {ROLE_LABELS[userRole]}
+        <Badge className={`${getRoleColor(groupId || '1')} text-xs`}>
+          {getRoleLabel(groupId || '1')}
         </Badge>
       </div>
 
