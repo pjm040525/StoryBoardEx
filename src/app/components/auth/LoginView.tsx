@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, Mountain } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -42,10 +42,12 @@ export function LoginView() {
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-200">
-            <Mountain className="w-9 h-9 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-stone-900">모임 관리</h1>
+          <img 
+            src="/logo.svg" 
+            alt="모임" 
+            className="w-16 h-16 mx-auto mb-4 drop-shadow-lg"
+          />
+          <h1 className="text-2xl font-bold text-stone-900">모임</h1>
           <p className="text-stone-500 mt-1">일정, 회비, 스토리를 한 곳에서</p>
         </div>
 

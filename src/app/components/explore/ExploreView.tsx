@@ -151,7 +151,10 @@ export function ExploreView() {
       <header className="sticky top-0 z-30 bg-white border-b border-stone-100">
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-stone-900">모임 둘러보기</h1>
+            <div className="flex items-center gap-2">
+              <img src="/logo.svg" alt="모임" className="w-8 h-8" />
+              <h1 className="text-xl font-bold text-stone-900">모임 둘러보기</h1>
+            </div>
             <Link to="/login">
               <Button variant="outline" size="sm" className="rounded-full">
                 로그인

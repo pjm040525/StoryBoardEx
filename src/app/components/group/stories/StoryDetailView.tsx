@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Share2, MoreHorizontal, MapPin, Calendar, Send, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Heart, MessageCircle, Share2, MoreHorizontal, MapPin, Calendar, Send, Trash2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../ui/alert-dialog';
+import { NoPermissionView } from '../../common/NoPermissionView';
 
 interface Comment {
   id: string;
@@ -32,11 +33,17 @@ interface Comment {
 
 export function StoryDetailView() {
   const navigate = useNavigate();
-  const { storyId } = useParams();
+  const { storyId, groupId } = useParams();
+  const [searchParams] = useSearchParams();
+  const isPreviewMode = searchParams.get('preview') === 'true';
+  
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(12);
   const [comment, setComment] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [hasPermission, setHasPermission] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [comments, setComments] = useState<Comment[]>([
     {
       id: '1',
@@ -68,10 +75,40 @@ export function StoryDetailView() {
     linkedEvent: '4월 정기 모임',
     taggedMembers: ['김철수', '이영희', '박민수'],
     createdAt: '2024.04.12',
-    isMyStory: true,
+    isMyStory: !isPreviewMode, // 미리보기 모드면 내 스토리 아님
+    groupName: '주말 등산 클럽',
   };
 
+  // 권한 체크 (실제로는 API에서 확인)
+  useEffect(() => {
+    setIsLoading(true);
+    
+    // 미리보기 모드에서는 공개된 게시글만 볼 수 있음
+    // 실제 구현에서는 API로 권한 확인
+    const checkPermission = () => {
+      // 미리보기 모드: 해당 모임의 게시글이 공개인지 확인 필요
+      // 여기서는 mock으로 처리 - 실제로는 모임의 privacySettings.showPostsToNonMembers 확인
+      if (isPreviewMode) {
+        // 모임의 게시글 공개 설정에 따라 결정
+        // 여기서는 공개로 가정 (실제로는 API에서 받아옴)
+        const isPostPublic = true; // 이 값이 false면 권한 없음
+        setHasPermission(isPostPublic);
+      } else {
+        // 일반 모드: 회원인지 확인 (여기서는 회원이라고 가정)
+        setHasPermission(true);
+      }
+      setIsLoading(false);
+    };
+
+    // 약간의 지연 후 권한 확인 (실제 API 호출 시뮬레이션)
+    setTimeout(checkPermission, 300);
+  }, [isPreviewMode, groupId, storyId]);
+
   const handleLike = () => {
+    if (isPreviewMode) {
+      toast.info('좋아요를 누르려면 모임에 가입해주세요');
+      return;
+    }
     setIsLiked(!isLiked);
     setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
   };
@@ -82,6 +119,10 @@ export function StoryDetailView() {
   };
 
   const handleAddComment = () => {
+    if (isPreviewMode) {
+      toast.info('댓글을 작성하려면 모임에 가입해주세요');
+      return;
+    }
     if (!comment.trim()) return;
     
     setComments([
@@ -103,10 +144,42 @@ export function StoryDetailView() {
     navigate(-1);
   };
 
+  const handleJoinClick = () => {
+    navigate(`/explore/${groupId}`);
+  };
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // 로딩 중
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  // 권한 없음
+  if (!hasPermission) {
+    return (
+      <NoPermissionView 
+        type="posts" 
+        groupName={story.groupName}
+        showJoinButton={true}
+        onJoinClick={handleJoinClick}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white pb-20">
+      {/* Preview Mode Banner */}
+      {isPreviewMode && (
+        <div className="bg-blue-500 text-white text-center py-2 text-sm">
+          <span>미리보기 모드입니다. 가입 후 더 많은 기능을 이용하세요!</span>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-stone-100">
         <div className="flex items-center justify-between px-4 py-3">
@@ -121,7 +194,7 @@ export function StoryDetailView() {
             </Button>
             <h1 className="ml-2 text-lg font-semibold text-stone-800">스토리</h1>
           </div>
-          {story.isMyStory && (
+          {story.isMyStory && !isPreviewMode && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -270,22 +343,34 @@ export function StoryDetailView() {
 
       {/* Comment Input */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 p-4 safe-area-pb">
-        <div className="max-w-md mx-auto flex gap-2">
-          <Input
-            placeholder="댓글을 입력하세요..."
-            className="flex-1 h-11 bg-stone-50 border-stone-200 rounded-xl"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-          />
-          <Button
-            onClick={handleAddComment}
-            disabled={!comment.trim()}
-            size="icon"
-            className="h-11 w-11 bg-orange-500 hover:bg-orange-600 rounded-xl"
-          >
-            <Send className="w-5 h-5" />
-          </Button>
+        <div className="max-w-md mx-auto">
+          {isPreviewMode ? (
+            <Button
+              onClick={handleJoinClick}
+              className="w-full h-11 bg-orange-500 hover:bg-orange-600 rounded-xl"
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              모임에 가입하고 댓글 작성하기
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Input
+                placeholder="댓글을 입력하세요..."
+                className="flex-1 h-11 bg-stone-50 border-stone-200 rounded-xl"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+              />
+              <Button
+                onClick={handleAddComment}
+                disabled={!comment.trim()}
+                size="icon"
+                className="h-11 w-11 bg-orange-500 hover:bg-orange-600 rounded-xl"
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -313,4 +398,3 @@ export function StoryDetailView() {
     </div>
   );
 }
-

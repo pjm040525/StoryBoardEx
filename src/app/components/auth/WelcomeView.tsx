@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mountain, Users, Calendar, Wallet, Camera, ChevronRight } from 'lucide-react';
+import { Users, Calendar, Wallet, Camera, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/button';
 
 interface OnboardingStep {
