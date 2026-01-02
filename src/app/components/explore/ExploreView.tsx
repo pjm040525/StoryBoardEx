@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, X, MapPin, Users, ChevronRight, Filter, SlidersHorizontal } from 'lucide-react';
+import { Search, X, MapPin, Users, ChevronRight, SlidersHorizontal, Eye, Lock } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
@@ -26,6 +26,7 @@ interface PublicGroup {
   maxMembers: number;
   type: 'club' | 'meetup' | 'study';
   location?: string;
+  isPostPublic: boolean; // 게시글 공개 여부
   nextEvent?: {
     title: string;
     date: string;
@@ -37,8 +38,9 @@ export function ExploreView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showPublicOnly, setShowPublicOnly] = useState(false);
 
-  // Mock data for public groups
+  // Mock data - 게시글 공개/비공개 모임 혼합
   const publicGroups: PublicGroup[] = [
     {
       id: '1',
@@ -50,7 +52,21 @@ export function ExploreView() {
       maxMembers: 50,
       type: 'club',
       location: '서울',
+      isPostPublic: true, // 게시글 공개
       nextEvent: { title: '관악산 정기 산행', date: '4/12' },
+    },
+    {
+      id: '2',
+      name: '프라이빗 독서 모임',
+      image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=500&auto=format&fit=crop&q=60',
+      description: '비공개로 진행되는 프리미엄 독서 모임입니다.',
+      tags: ['독서', '토론', '인문학'],
+      memberCount: 8,
+      maxMembers: 15,
+      type: 'study',
+      location: '강남',
+      isPostPublic: false, // 게시글 비공개
+      nextEvent: { title: '4월 독서 토론', date: '4/18' },
     },
     {
       id: '3',
@@ -62,6 +78,7 @@ export function ExploreView() {
       maxMembers: 30,
       type: 'meetup',
       location: '강남',
+      isPostPublic: true, // 게시글 공개
       nextEvent: { title: '4월 정기 밋업', date: '4/20' },
     },
     {
@@ -74,7 +91,20 @@ export function ExploreView() {
       maxMembers: 20,
       type: 'club',
       location: '여의도',
+      isPostPublic: true, // 게시글 공개
       nextEvent: { title: '일요일 모닝 요가', date: '4/14' },
+    },
+    {
+      id: '5',
+      name: '비밀 투자 스터디',
+      image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=500&auto=format&fit=crop&q=60',
+      description: '소수 정예로 진행하는 투자 전략 스터디입니다.',
+      tags: ['주식', '투자', '재테크'],
+      memberCount: 6,
+      maxMembers: 10,
+      type: 'study',
+      location: '온라인',
+      isPostPublic: false, // 게시글 비공개
     },
     {
       id: '6',
@@ -86,6 +116,7 @@ export function ExploreView() {
       maxMembers: 50,
       type: 'club',
       location: '서울숲',
+      isPostPublic: true, // 게시글 공개
       nextEvent: { title: '서울숲 10km 러닝', date: '4/13' },
     },
     {
@@ -98,17 +129,45 @@ export function ExploreView() {
       maxMembers: 25,
       type: 'club',
       location: '서울',
+      isPostPublic: true, // 게시글 공개
     },
     {
       id: '8',
-      name: '주식 스터디',
-      image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=500&auto=format&fit=crop&q=60',
-      description: '주식 투자 공부를 함께 해요',
-      tags: ['주식', '투자', '스터디'],
+      name: '프리미엄 와인 모임',
+      image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=500&auto=format&fit=crop&q=60',
+      description: '와인 애호가들의 비공개 테이스팅 모임',
+      tags: ['와인', '테이스팅', '프리미엄'],
+      memberCount: 10,
+      maxMembers: 15,
+      type: 'meetup',
+      location: '청담',
+      isPostPublic: false, // 게시글 비공개
+      nextEvent: { title: '프랑스 와인 테이스팅', date: '4/25' },
+    },
+    {
+      id: '9',
+      name: '영어 회화 스터디',
+      image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=500&auto=format&fit=crop&q=60',
+      description: '영어로 자유롭게 대화하는 스터디입니다.',
+      tags: ['영어', '회화', '스터디'],
+      memberCount: 12,
+      maxMembers: 16,
+      type: 'study',
+      location: '홍대',
+      isPostPublic: true, // 게시글 공개
+      nextEvent: { title: '토요일 프리토킹', date: '4/13' },
+    },
+    {
+      id: '10',
+      name: 'VIP 골프 모임',
+      image: 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=500&auto=format&fit=crop&q=60',
+      description: '골프를 사랑하는 분들의 프라이빗 모임',
+      tags: ['골프', '운동', 'VIP'],
       memberCount: 8,
       maxMembers: 12,
-      type: 'study',
-      location: '온라인',
+      type: 'club',
+      location: '용인',
+      isPostPublic: false, // 게시글 비공개
     },
   ];
 
@@ -122,8 +181,9 @@ export function ExploreView() {
     
     const matchesType = selectedTypes.length === 0 || selectedTypes.includes(group.type);
     const matchesTags = selectedTags.length === 0 || group.tags.some(tag => selectedTags.includes(tag));
+    const matchesPublic = !showPublicOnly || group.isPostPublic;
     
-    return matchesSearch && matchesType && matchesTags;
+    return matchesSearch && matchesType && matchesTags && matchesPublic;
   });
 
   const toggleType = (type: string) => {
@@ -141,9 +201,12 @@ export function ExploreView() {
   const clearFilters = () => {
     setSelectedTypes([]);
     setSelectedTags([]);
+    setShowPublicOnly(false);
   };
 
-  const activeFilterCount = selectedTypes.length + selectedTags.length;
+  const activeFilterCount = selectedTypes.length + selectedTags.length + (showPublicOnly ? 1 : 0);
+  const publicCount = filteredGroups.filter(g => g.isPostPublic).length;
+  const privateCount = filteredGroups.filter(g => !g.isPostPublic).length;
 
   return (
     <div className="min-h-screen bg-stone-50 pb-20">
@@ -200,6 +263,23 @@ export function ExploreView() {
                   <SheetDescription>원하는 조건으로 모임을 찾아보세요</SheetDescription>
                 </SheetHeader>
                 <div className="py-6 space-y-6">
+                  {/* Post Visibility Filter */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-medium">게시글 공개 여부</Label>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="publicOnly"
+                        checked={showPublicOnly}
+                        onCheckedChange={(checked) => setShowPublicOnly(checked as boolean)}
+                        className="data-[state=checked]:bg-orange-500"
+                      />
+                      <Label htmlFor="publicOnly" className="cursor-pointer flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-green-600" />
+                        게시글 공개 모임만 보기
+                      </Label>
+                    </div>
+                  </div>
+
                   {/* Type Filter */}
                   <div className="space-y-3">
                     <Label className="text-base font-medium">모임 유형</Label>
@@ -260,24 +340,59 @@ export function ExploreView() {
         </div>
       </header>
 
-      {/* Results */}
-      <div className="p-4">
-        <p className="text-sm text-stone-500 mb-4">
-          {filteredGroups.length}개의 공개 모임
-        </p>
+      {/* Results Summary */}
+      <div className="p-4 pb-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-stone-500">
+            {filteredGroups.length}개의 모임
+          </p>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-full">
+              <Eye className="w-3 h-3" />
+              공개 {publicCount}
+            </span>
+            <span className="flex items-center gap-1 text-stone-500 bg-stone-100 px-2 py-1 rounded-full">
+              <Lock className="w-3 h-3" />
+              비공개 {privateCount}
+            </span>
+          </div>
+        </div>
+      </div>
 
+      {/* Group List */}
+      <div className="px-4 pb-4">
         {filteredGroups.length > 0 ? (
           <div className="space-y-4">
             {filteredGroups.map(group => (
               <Link to={`/explore/${group.id}`} key={group.id}>
-                <Card className="overflow-hidden hover:shadow-md transition-shadow border-stone-100">
+                <Card className={`overflow-hidden hover:shadow-md transition-shadow ${
+                  group.isPostPublic ? 'border-stone-100' : 'border-stone-200 bg-stone-50/50'
+                }`}>
                   <div className="flex">
-                    <div className="w-28 h-28 bg-stone-200 flex-shrink-0">
+                    <div className="w-28 h-28 bg-stone-200 flex-shrink-0 relative">
                       <img
                         src={group.image}
                         alt={group.name}
                         className="w-full h-full object-cover"
                       />
+                      {/* 공개/비공개 배지 */}
+                      <div className={`absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        group.isPostPublic 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-stone-700 text-white'
+                      }`}>
+                        {group.isPostPublic ? (
+                          <>
+                            <Eye className="w-3 h-3" />
+                            공개
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3" />
+                            비공개
+                          </>
+                        )}
+                      </div>
                     </div>
                     <CardContent className="flex-1 p-3">
                       <div className="flex items-start justify-between">
@@ -327,7 +442,24 @@ export function ExploreView() {
           </div>
         )}
       </div>
+
+      {/* Info Banner */}
+      <div className="px-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <Eye className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-blue-800">게시글 공개/비공개 안내</p>
+              <p className="text-xs text-blue-700 mt-1">
+                <span className="text-green-600 font-medium">게시글 공개</span> 모임은 가입 전에도 게시글을 미리 볼 수 있습니다.<br/>
+                <span className="text-stone-600 font-medium">게시글 비공개</span> 모임은 가입 후에만 게시글을 확인할 수 있습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-

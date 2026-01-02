@@ -25,13 +25,32 @@ export function GroupPreviewView() {
   const [joinMessage, setJoinMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 비공개 모임 ID 목록 (실제로는 API에서 받아옴)
+  const privateGroupIds = ['2', '5', '8', '10'];
+  const isPrivateGroup = privateGroupIds.includes(groupId || '');
+
   // Mock data - 실제로는 API에서 가져옴
+  const groupData: Record<string, any> = {
+    '1': { name: '주말 등산 클럽', description: '매주 토요일 서울 근교 산행합니다. 초보자 환영!', tags: ['등산', '운동', '친목'], image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=800' },
+    '2': { name: '프라이빗 독서 모임', description: '비공개로 진행되는 프리미엄 독서 모임입니다.', tags: ['독서', '토론', '인문학'], image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800' },
+    '3': { name: '개발자 네트워킹', description: 'IT 업계 종사자들의 네트워킹 모임입니다.', tags: ['개발', 'IT', '네트워킹'], image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800' },
+    '4': { name: '요가 & 명상 클럽', description: '바쁜 일상 속 마음의 평화를 찾아요.', tags: ['요가', '명상', '건강'], image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800' },
+    '5': { name: '비밀 투자 스터디', description: '소수 정예로 진행하는 투자 전략 스터디입니다.', tags: ['주식', '투자', '재테크'], image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800' },
+    '6': { name: '주말 러닝 크루', description: '함께 뛰면 더 즐거워요! 러닝 크루', tags: ['러닝', '운동', '건강'], image: 'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800' },
+    '7': { name: '사진 동호회', description: '출사와 사진 리뷰를 함께하는 모임', tags: ['사진', '출사', '취미'], image: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800' },
+    '8': { name: '프리미엄 와인 모임', description: '와인 애호가들의 비공개 테이스팅 모임', tags: ['와인', '테이스팅', '프리미엄'], image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=800' },
+    '9': { name: '영어 회화 스터디', description: '영어로 자유롭게 대화하는 스터디입니다.', tags: ['영어', '회화', '스터디'], image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800' },
+    '10': { name: 'VIP 골프 모임', description: '골프를 사랑하는 분들의 프라이빗 모임', tags: ['골프', '운동', 'VIP'], image: 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800' },
+  };
+
+  const currentGroupData = groupData[groupId || '1'] || groupData['1'];
+
   const group = {
     id: groupId,
-    name: '주말 등산 클럽',
-    image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&auto=format&fit=crop&q=60',
-    description: '매주 토요일 서울 근교 산행합니다. 초보자 환영! 산을 좋아하는 분들과 함께 건강하고 즐거운 주말을 보내요. 등산 후에는 맛있는 식사와 함께 친목도 다집니다.',
-    tags: ['등산', '운동', '친목', '주말'],
+    name: currentGroupData.name,
+    image: currentGroupData.image + '&auto=format&fit=crop&q=60',
+    description: currentGroupData.description + ' 산을 좋아하는 분들과 함께 건강하고 즐거운 주말을 보내요.',
+    tags: currentGroupData.tags,
     memberCount: 15,
     maxMembers: 50,
     type: 'club',
@@ -47,13 +66,13 @@ export function GroupPreviewView() {
       { id: '3', name: '박민수', avatar: '' },
     ],
     upcomingEvents: [
-      { id: '1', title: '관악산 정기 산행', date: '4월 12일 (토) 10:00', location: '사당역 4번 출구' },
-      { id: '2', title: '북한산 봄맞이 산행', date: '4월 26일 (토) 09:00', location: '북한산성입구역' },
+      { id: '1', title: '4월 정기 모임', date: '4월 12일 (토) 10:00', location: '강남역' },
+      { id: '2', title: '5월 특별 모임', date: '5월 10일 (토) 09:00', location: '홍대입구역' },
     ],
-    // 공개 설정
+    // 공개 설정 - 비공개 모임인 경우 게시글 비공개
     privacySettings: {
-      showPostsToNonMembers: true, // 게시글 공개 여부
-      showMembersToNonMembers: true,
+      showPostsToNonMembers: !isPrivateGroup, // 비공개 모임이면 false
+      showMembersToNonMembers: !isPrivateGroup,
     },
     // 공개된 게시글 (showPostsToNonMembers가 true일 때만 표시)
     publicPosts: [
