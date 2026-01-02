@@ -267,7 +267,7 @@ export function HomeView() {
             const isMyGroup = MOCK_GROUPS.find(g => g.id === group.id);
             const roleLabel = isMyGroup ? getRoleLabel(group.id || '') : null;
             const roleColor = isMyGroup ? getRoleColor(group.id || '') : '';
-            const fullGroup = isMyGroup as Group | undefined;
+            const fullGroup: Group | undefined = isMyGroup || undefined;
             
             return (
               <Link 
