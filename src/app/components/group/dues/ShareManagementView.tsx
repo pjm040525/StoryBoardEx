@@ -248,7 +248,7 @@ export function ShareManagementView() {
                       1/{account.memberCount} 지분
                     </span>
                     <span className="text-xs text-green-600">
-                      = {((account.perPersonShare || 0) / account.memberCount * 100).toFixed(1)}% 
+                      = {(100 / account.memberCount).toFixed(1)}%
                     </span>
                   </div>
                 )}
