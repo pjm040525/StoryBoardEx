@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Plus, Calendar as CalendarIcon, MapPin, CheckCircle2, ClipboardCheck, Clock } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, MapPin, CheckCircle2, ClipboardCheck } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { Button } from '../../ui/button';
 import { Card, CardContent } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Link } from 'react-router-dom';
-
-type UserRole = 'owner' | 'treasurer' | 'manager' | 'member';
+import { 
+  getUserRoleForGroup, 
+  canFinalizeSchedule,
+  ROLE_LABELS, 
+  ROLE_COLORS 
+} from '../../../data/userRoles';
 
 interface Schedule {
   id: number;
@@ -16,22 +20,18 @@ interface Schedule {
   status: 'voting' | 'confirmed' | 'ongoing' | 'completed';
   dDay: number | null;
   type: 'schedule' | 'vote';
-  // 일정 진행 상태
   isToday: boolean;
   isPast: boolean;
 }
 
 export function ScheduleListView() {
-  const [userRole, setUserRole] = useState<UserRole>('member');
-
-  useEffect(() => {
-    const storedRole = localStorage.getItem('userRole') as UserRole;
-    if (storedRole) {
-      setUserRole(storedRole);
-    }
-  }, []);
-
-  const canFinalize = userRole === 'owner' || userRole === 'treasurer' || userRole === 'manager';
+  const { groupId } = useParams();
+  
+  // 모임별 역할 가져오기
+  const userRole = getUserRoleForGroup(groupId || '1');
+  
+  // 일정 마무리 권한 체크
+  const showFinalizeButton = canFinalizeSchedule(userRole);
 
   const schedules: Schedule[] = [
     {
@@ -99,6 +99,13 @@ export function ScheduleListView() {
 
   return (
     <div className="space-y-4 pb-20">
+      {/* User Role Badge */}
+      <div className="flex justify-end">
+        <Badge className={`${ROLE_COLORS[userRole]} text-xs`}>
+          {ROLE_LABELS[userRole]}
+        </Badge>
+      </div>
+
       {schedules.map((item) => {
         const linkTo = item.type === 'vote' ? `../vote/${item.id}` : `${item.id}`;
         
@@ -145,8 +152,8 @@ export function ScheduleListView() {
               
               <div className="mt-4 pt-3 border-t border-stone-100 flex justify-between items-center">
                 <div className="flex gap-2">
-                  {/* 일정 마무리 버튼 - 운영진/총무/모임장만 보임 */}
-                  {canFinalize && (item.isToday || item.isPast) && item.status !== 'voting' && (
+                  {/* 일정 마무리 버튼 - 모임장/총무/운영진만 보임 */}
+                  {showFinalizeButton && (item.isToday || item.isPast) && item.status !== 'voting' && (
                     <Link to={`${item.id}/finalize`} onClick={(e) => e.stopPropagation()}>
                       <Button 
                         size="sm" 

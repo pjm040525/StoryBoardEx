@@ -1,23 +1,27 @@
-import { useEffect, useState } from 'react';
-import { Wallet, ArrowDownLeft, ArrowUpRight, History, Receipt, PieChart, Users, Info, ChevronRight } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Wallet, ArrowDownLeft, ArrowUpRight, History, Receipt, PieChart, Info, ChevronRight } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Card, CardContent } from '../../ui/card';
 import { Link } from 'react-router-dom';
 import { Badge } from '../../ui/badge';
 import { Progress } from '../../ui/progress';
-
-type UserRole = 'owner' | 'treasurer' | 'manager' | 'member';
+import { 
+  getUserRoleForGroup, 
+  canWithdraw, 
+  canViewShares,
+  ROLE_LABELS, 
+  ROLE_COLORS 
+} from '../../../data/userRoles';
 
 export function DuesView() {
-  const [userRole, setUserRole] = useState<UserRole>('member');
-
-  useEffect(() => {
-    // localStorage에서 역할 가져오기 (테스트 계정 시스템)
-    const storedRole = localStorage.getItem('userRole') as UserRole;
-    if (storedRole) {
-      setUserRole(storedRole);
-    }
-  }, []);
+  const { groupId } = useParams();
+  
+  // 모임별 역할 가져오기
+  const userRole = getUserRoleForGroup(groupId || '1');
+  
+  // 권한 체크
+  const showWithdrawButton = canWithdraw(userRole);
+  const showSharesLink = canViewShares(userRole);
 
   const transactions = [
     { id: 1, title: '4월 정기 산행 뒤풀이', amount: -150000, date: '2024.04.12', type: 'expense' },
@@ -29,33 +33,16 @@ export function DuesView() {
   const accountInfo = {
     totalBalance: 1250000,
     managementType: 'fair' as 'operating' | 'fair',
-    myShare: 85000, // 내 지분
+    myShare: 85000,
     sharePercent: 6.8,
-  };
-
-  const canWithdraw = userRole === 'owner' || userRole === 'treasurer';
-  const canViewShares = userRole === 'owner' || userRole === 'treasurer';
-
-  const roleLabels: Record<UserRole, string> = {
-    owner: '모임장',
-    treasurer: '총무',
-    manager: '운영진',
-    member: '회원',
-  };
-
-  const roleColors: Record<UserRole, string> = {
-    owner: 'bg-purple-100 text-purple-700',
-    treasurer: 'bg-green-100 text-green-700',
-    manager: 'bg-blue-100 text-blue-700',
-    member: 'bg-stone-100 text-stone-600',
   };
 
   return (
     <div className="space-y-6 pb-20">
       {/* User Role Badge */}
       <div className="flex justify-end">
-        <Badge className={`${roleColors[userRole]} text-xs`}>
-          {roleLabels[userRole]}
+        <Badge className={`${ROLE_COLORS[userRole]} text-xs`}>
+          {ROLE_LABELS[userRole]}
         </Badge>
       </div>
 
@@ -100,6 +87,7 @@ export function DuesView() {
             </div>
           )}
           
+          {/* Action Buttons */}
           <div className="flex gap-4">
             <Link to="deposit" className="flex-1">
               <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none h-12 rounded-xl">
@@ -107,7 +95,8 @@ export function DuesView() {
                 채우기
               </Button>
             </Link>
-            {canWithdraw ? (
+            
+            {showWithdrawButton ? (
               <Link to="withdraw" className="flex-1">
                 <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 text-white border-none h-12 rounded-xl">
                   <ArrowUpRight className="w-4 h-4 mr-2" />
@@ -125,7 +114,8 @@ export function DuesView() {
               </Button>
             )}
           </div>
-          {!canWithdraw && (
+          
+          {!showWithdrawButton && (
             <p className="text-xs text-stone-500 text-center mt-2">
               보내기는 모임장/총무만 가능합니다
             </p>
@@ -154,7 +144,7 @@ export function DuesView() {
       </div>
 
       {/* Share Management Link (총무/모임장만) */}
-      {canViewShares && (
+      {showSharesLink && (
         <Link to="../admin/shares">
           <Card className="border-green-200 bg-green-50 hover:bg-green-100 transition-colors cursor-pointer">
             <CardContent className="p-4">

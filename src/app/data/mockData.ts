@@ -1,3 +1,5 @@
+import { UserRole } from './userRoles';
+
 export interface Group {
   id: string;
   name: string;
@@ -7,6 +9,7 @@ export interface Group {
   maxMembers: number;
   type: 'club' | 'meetup' | 'study';
   isPublic: boolean;
+  myRole: UserRole; // 현재 사용자의 역할
   nextEvent?: {
     title: string;
     date: string;
@@ -24,6 +27,7 @@ export const MOCK_GROUPS: Group[] = [
     maxMembers: 50,
     type: 'club',
     isPublic: true,
+    myRole: 'owner', // 모임장
     nextEvent: {
       title: '관악산 정기 산행',
       date: '2025-04-12T10:00:00',
@@ -38,7 +42,8 @@ export const MOCK_GROUPS: Group[] = [
     memberCount: 8,
     maxMembers: 10,
     type: 'study',
-    isPublic: false
+    isPublic: false,
+    myRole: 'treasurer', // 총무
   },
   {
     id: '3',
@@ -49,6 +54,7 @@ export const MOCK_GROUPS: Group[] = [
     maxMembers: 30,
     type: 'meetup',
     isPublic: true,
+    myRole: 'manager', // 운영진
     nextEvent: {
       title: '4월 정기 밋업',
       date: '2025-04-20T19:00:00',
@@ -64,6 +70,7 @@ export const MOCK_GROUPS: Group[] = [
     maxMembers: 20,
     type: 'club',
     isPublic: true,
+    myRole: 'member', // 일반 회원
     nextEvent: {
       title: '일요일 모닝 요가',
       date: '2025-04-14T08:00:00',
@@ -78,7 +85,8 @@ export const MOCK_GROUPS: Group[] = [
     memberCount: 6,
     maxMembers: 8,
     type: 'study',
-    isPublic: false
+    isPublic: false,
+    myRole: 'member', // 일반 회원
   },
   {
     id: '6',
@@ -89,6 +97,7 @@ export const MOCK_GROUPS: Group[] = [
     maxMembers: 50,
     type: 'club',
     isPublic: true,
+    myRole: 'member', // 일반 회원
     nextEvent: {
       title: '서울숲 10km 러닝',
       date: '2025-04-13T07:00:00',

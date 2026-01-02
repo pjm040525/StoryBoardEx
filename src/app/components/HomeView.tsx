@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Plus, Bell, Search, X, Users, Compass, KeyRound } from 'lucide-react';
+import { Plus, Bell, Search, X, Users, Compass, KeyRound, Crown, Wallet, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MOCK_GROUPS } from '../data/mockData';
+import { ROLE_LABELS, ROLE_COLORS, UserRole } from '../data/userRoles';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Avatar, AvatarFallback } from './ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 // 전체 공개 모임 (탐색용 mock)
@@ -20,6 +21,7 @@ const PUBLIC_GROUPS = [
     maxMembers: 100,
     type: 'club' as const,
     isPublic: true,
+    myRole: undefined,
     nextEvent: { title: '한강 러닝', date: '4/14', location: '여의도' },
   },
   {
@@ -31,9 +33,24 @@ const PUBLIC_GROUPS = [
     maxMembers: 30,
     type: 'study' as const,
     isPublic: true,
+    myRole: undefined,
     nextEvent: { title: '4월 독서 토론', date: '4/20', location: '강남' },
   },
 ];
+
+// 역할 아이콘 컴포넌트
+function RoleIcon({ role }: { role: UserRole }) {
+  switch (role) {
+    case 'owner':
+      return <Crown className="w-3 h-3" />;
+    case 'treasurer':
+      return <Wallet className="w-3 h-3" />;
+    case 'manager':
+      return <Shield className="w-3 h-3" />;
+    default:
+      return null;
+  }
+}
 
 export function HomeView() {
   const unreadNotifications = 2;
@@ -104,6 +121,17 @@ export function HomeView() {
             <span className="text-stone-700">초대코드 입력</span>
           </Button>
         </Link>
+      </div>
+
+      {/* Role Legend */}
+      <div className="flex flex-wrap gap-2 p-3 bg-stone-50 rounded-xl">
+        <span className="text-xs text-stone-500 w-full mb-1">내 역할:</span>
+        {MOCK_GROUPS.filter((g, i, arr) => arr.findIndex(x => x.myRole === g.myRole) === i).map(group => (
+          <Badge key={group.myRole} className={`${ROLE_COLORS[group.myRole]} text-xs flex items-center gap-1`}>
+            <RoleIcon role={group.myRole} />
+            {ROLE_LABELS[group.myRole]}
+          </Badge>
+        ))}
       </div>
 
       {/* Search */}
@@ -213,6 +241,15 @@ export function HomeView() {
                     {group.type === 'club' ? '동아리' : group.type === 'study' ? '스터디' : '정모'}
                   </Badge>
                 </div>
+                {/* 역할 배지 - 내 모임만 표시 */}
+                {group.myRole && (
+                  <div className="absolute bottom-2 left-2">
+                    <Badge className={`${ROLE_COLORS[group.myRole]} text-xs flex items-center gap-1 shadow-sm`}>
+                      <RoleIcon role={group.myRole} />
+                      {ROLE_LABELS[group.myRole]}
+                    </Badge>
+                  </div>
+                )}
               </div>
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-2">
