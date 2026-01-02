@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ChevronRight, Shield, CreditCard, Users, LogOut, AlertTriangle } from 'lucide-react';
+import { ChevronRight, Shield, CreditCard, Users, LogOut, AlertTriangle, Crown, Globe, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Switch } from '../../ui/switch';
 import { Label } from '../../ui/label';
 import { Input } from '../../ui/input';
+import { Badge } from '../../ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +22,7 @@ export function AdminView() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const groupName = '주말 등산 클럽'; // 실제로는 API에서 가져와야 함
+  const currentVisibility = 'searchable'; // 실제로는 API에서
 
   const handleDeleteGroup = () => {
     if (deleteConfirmText !== groupName) {
@@ -35,7 +37,12 @@ export function AdminView() {
 
   return (
     <div className="space-y-6 pb-20">
+      {/* 모임 관리 */}
       <div className="bg-white rounded-xl border border-stone-100 divide-y divide-stone-50 overflow-hidden">
+        <div className="px-4 py-3 bg-stone-50">
+          <h3 className="font-medium text-stone-700">모임 관리</h3>
+        </div>
+        
         <Link to="edit-group" className="block">
           <div className="p-4 flex items-center justify-between hover:bg-stone-50 cursor-pointer">
             <div className="flex items-center gap-3">
@@ -45,6 +52,29 @@ export function AdminView() {
               <div>
                 <p className="font-medium text-stone-900">모임 정보 수정</p>
                 <p className="text-xs text-stone-500">이름, 커버 이미지, 태그</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-stone-300" />
+          </div>
+        </Link>
+
+        <Link to="privacy" className="block">
+          <div className="p-4 flex items-center justify-between hover:bg-stone-50 cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                {currentVisibility === 'private' ? (
+                  <Lock className="w-5 h-5" />
+                ) : (
+                  <Globe className="w-5 h-5" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium text-stone-900">공개 설정</p>
+                <p className="text-xs text-stone-500">
+                  {currentVisibility === 'private' && '비공개'}
+                  {currentVisibility === 'searchable' && '검색 허용'}
+                  {currentVisibility === 'public' && '완전 공개'}
+                </p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-stone-300" />
@@ -65,6 +95,13 @@ export function AdminView() {
             <ChevronRight className="w-5 h-5 text-stone-300" />
           </div>
         </Link>
+      </div>
+
+      {/* 멤버/권한 관리 */}
+      <div className="bg-white rounded-xl border border-stone-100 divide-y divide-stone-50 overflow-hidden">
+        <div className="px-4 py-3 bg-stone-50">
+          <h3 className="font-medium text-stone-700">멤버 관리</h3>
+        </div>
         
         <Link to="members" className="block">
           <div className="p-4 flex items-center justify-between hover:bg-stone-50 cursor-pointer">
@@ -74,7 +111,27 @@ export function AdminView() {
               </div>
               <div>
                 <p className="font-medium text-stone-900">멤버 관리</p>
-                <p className="text-xs text-stone-500">가입 승인, 추방, 등급 변경</p>
+                <p className="text-xs text-stone-500">가입 승인, 추방, 회비 현황</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                2명 대기
+              </Badge>
+              <ChevronRight className="w-5 h-5 text-stone-300" />
+            </div>
+          </div>
+        </Link>
+
+        <Link to="roles" className="block">
+          <div className="p-4 flex items-center justify-between hover:bg-stone-50 cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg">
+                <Crown className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-medium text-stone-900">권한 관리</p>
+                <p className="text-xs text-stone-500">총무, 운영진 지정 및 권한 변경</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-stone-300" />
@@ -82,6 +139,7 @@ export function AdminView() {
         </Link>
       </div>
 
+      {/* 알림 설정 */}
       <div className="bg-white rounded-xl border border-stone-100 p-4 space-y-6">
         <h3 className="font-bold text-stone-900">알림 설정</h3>
         
@@ -99,8 +157,16 @@ export function AdminView() {
           </div>
           <Switch defaultChecked className="data-[state=checked]:bg-orange-500" />
         </div>
+
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label className="text-base text-stone-900">정산 요청 알림</Label>
+          </div>
+          <Switch defaultChecked className="data-[state=checked]:bg-orange-500" />
+        </div>
       </div>
 
+      {/* 위험 영역 */}
       <button 
         onClick={() => setShowDeleteDialog(true)}
         className="w-full p-4 rounded-xl border border-red-100 bg-red-50 text-red-600 font-medium flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"

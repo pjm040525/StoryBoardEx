@@ -1,4 +1,4 @@
-import { Plus, Wallet, ArrowDownLeft, ArrowUpRight, History } from 'lucide-react';
+import { Plus, Wallet, ArrowDownLeft, ArrowUpRight, History, Receipt } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Card, CardContent } from '../../ui/card';
 import { Link } from 'react-router-dom';
@@ -9,6 +9,10 @@ export function DuesView() {
     { id: 2, title: '홍길동 회비 입금', amount: 30000, date: '2024.04.10', type: 'income' },
     { id: 3, title: '김철수 회비 입금', amount: 30000, date: '2024.04.10', type: 'income' },
   ];
+
+  // 현재 사용자의 역할 (실제로는 Context나 API에서)
+  const currentUserRole: 'owner' | 'treasurer' | 'manager' | 'member' = 'owner';
+  const canWithdraw = currentUserRole === 'owner' || currentUserRole === 'treasurer';
 
   return (
     <div className="space-y-6 pb-20">
@@ -27,15 +31,35 @@ export function DuesView() {
           </div>
           
           <div className="flex gap-4">
-            <Button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-none h-12 rounded-xl">
-              <ArrowDownLeft className="w-4 h-4 mr-2" />
-              채우기
-            </Button>
-            <Button variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20 text-white border-none h-12 rounded-xl">
-              <ArrowUpRight className="w-4 h-4 mr-2" />
-              보내기
-            </Button>
+            <Link to="deposit" className="flex-1">
+              <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none h-12 rounded-xl">
+                <ArrowDownLeft className="w-4 h-4 mr-2" />
+                채우기
+              </Button>
+            </Link>
+            {canWithdraw ? (
+              <Link to="withdraw" className="flex-1">
+                <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 text-white border-none h-12 rounded-xl">
+                  <ArrowUpRight className="w-4 h-4 mr-2" />
+                  보내기
+                </Button>
+              </Link>
+            ) : (
+              <Button 
+                variant="secondary" 
+                disabled 
+                className="flex-1 bg-white/5 text-white/50 border-none h-12 rounded-xl cursor-not-allowed"
+              >
+                <ArrowUpRight className="w-4 h-4 mr-2" />
+                보내기
+              </Button>
+            )}
           </div>
+          {!canWithdraw && (
+            <p className="text-xs text-stone-500 text-center mt-2">
+              보내기는 모임장/총무만 가능합니다
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -44,7 +68,7 @@ export function DuesView() {
         <Link to="settlement-request">
           <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 border-stone-200 hover:bg-stone-50 hover:border-orange-200 rounded-xl group">
             <div className="p-2 bg-stone-100 rounded-full group-hover:bg-orange-100 transition-colors">
-              <Plus className="w-5 h-5 text-stone-600 group-hover:text-orange-600" />
+              <Receipt className="w-5 h-5 text-stone-600 group-hover:text-orange-600" />
             </div>
             <span className="text-sm font-medium text-stone-600">정산 요청</span>
           </Button>

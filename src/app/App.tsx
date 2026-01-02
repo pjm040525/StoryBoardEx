@@ -37,6 +37,10 @@ import { PrivacyView } from "./components/legal/PrivacyView";
 
 // Invite
 import { InviteView } from "./components/invite/InviteView";
+import { InviteCodeView } from "./components/invite/InviteCodeView";
+
+// Common
+import { NoPermissionView } from "./components/common/NoPermissionView";
 
 // Group Pages
 import { GroupLayout } from "./components/group/GroupLayout";
@@ -46,17 +50,23 @@ import { ScheduleDetailView } from "./components/group/schedule/ScheduleDetailVi
 import { VoteCreateView } from "./components/group/schedule/VoteCreateView";
 import { VoteDetailView } from "./components/group/schedule/VoteDetailView";
 import { DuesView } from "./components/group/dues/DuesView";
+import { DepositView } from "./components/group/dues/DepositView";
+import { WithdrawView } from "./components/group/dues/WithdrawView";
 import { SettlementRequestView } from "./components/group/dues/SettlementRequestView";
 import { DuesRulesView } from "./components/group/dues/DuesRulesView";
 import { DuesHistoryView } from "./components/group/dues/DuesHistoryView";
 import { StoriesView } from "./components/group/stories/StoriesView";
 import { CreateStoryView } from "./components/group/stories/CreateStoryView";
 import { StoryDetailView } from "./components/group/stories/StoryDetailView";
+import { AlbumDetailView } from "./components/group/stories/AlbumDetailView";
 import { StatsView } from "./components/group/stats/StatsView";
+import { ParticipationStatsView } from "./components/group/stats/ParticipationStatsView";
 import { AdminView } from "./components/group/admin/AdminView";
 import { EditGroupView } from "./components/group/admin/EditGroupView";
 import { DuesPolicyView } from "./components/group/admin/DuesPolicyView";
 import { MemberManagementView } from "./components/group/admin/MemberManagementView";
+import { RoleManagementView } from "./components/group/admin/RoleManagementView";
+import { GroupPrivacySettingsView } from "./components/group/admin/GroupPrivacySettingsView";
 
 // Simple Global Layout for the Home Page
 function GlobalLayout() {
@@ -102,9 +112,12 @@ export default function App() {
             <Route path="/explore/:groupId" element={<GroupPreviewView />} />
           </Route>
 
-          {/* Invite Page */}
+          {/* Invite Pages */}
           <Route element={<AuthLayout />}>
             <Route path="/invite/:inviteCode" element={<InviteView />} />
+          </Route>
+          <Route element={<GlobalLayout />}>
+            <Route path="/invite-code" element={<InviteCodeView />} />
           </Route>
 
           {/* Main Pages (Logged In) */}
@@ -126,6 +139,9 @@ export default function App() {
             <Route path="/help" element={<HelpView />} />
             <Route path="/terms" element={<TermsView />} />
             <Route path="/privacy" element={<PrivacyView />} />
+
+            {/* No Permission */}
+            <Route path="/no-permission" element={<NoPermissionView />} />
           </Route>
 
           {/* Group Pages */}
@@ -140,6 +156,8 @@ export default function App() {
             
             {/* Dues */}
             <Route path="dues" element={<DuesView />} />
+            <Route path="dues/deposit" element={<DepositView />} />
+            <Route path="dues/withdraw" element={<WithdrawView />} />
             <Route path="dues/settlement-request" element={<SettlementRequestView />} />
             <Route path="dues/rules" element={<DuesRulesView />} />
             <Route path="dues/history" element={<DuesHistoryView />} />
@@ -148,15 +166,19 @@ export default function App() {
             <Route path="stories" element={<StoriesView />} />
             <Route path="stories/create" element={<CreateStoryView />} />
             <Route path="stories/:storyId" element={<StoryDetailView />} />
+            <Route path="albums/:albumId" element={<AlbumDetailView />} />
             
             {/* Stats */}
             <Route path="stats" element={<StatsView />} />
+            <Route path="stats/participation" element={<ParticipationStatsView />} />
             
             {/* Admin */}
             <Route path="admin" element={<AdminView />} />
             <Route path="admin/edit-group" element={<EditGroupView />} />
             <Route path="admin/dues-policy" element={<DuesPolicyView />} />
             <Route path="admin/members" element={<MemberManagementView />} />
+            <Route path="admin/roles" element={<RoleManagementView />} />
+            <Route path="admin/privacy" element={<GroupPrivacySettingsView />} />
           </Route>
 
           {/* 404 Page */}
