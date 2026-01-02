@@ -60,8 +60,8 @@ export function canFinalizeSchedule(role: UserRole): boolean {
 }
 
 export function canChangeManagementType(role: UserRole): boolean {
-  // 통장 유형 변경: 모임장, 총무, 운영진
-  return role === 'owner' || role === 'treasurer' || role === 'manager';
+  // 통장 유형 변경: 모임장, 총무만 (모임장은 총무 권한 포함)
+  return role === 'owner' || role === 'treasurer';
 }
 
 export function canManageMembers(role: UserRole): boolean {
