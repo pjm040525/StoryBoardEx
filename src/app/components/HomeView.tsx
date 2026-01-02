@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Plus, Bell, Search, X, Users } from 'lucide-react';
+import { Plus, Bell, Search, X, Users, User, Compass } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MOCK_GROUPS } from '../data/mockData';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 export function HomeView() {
   const unreadNotifications = 2; // 실제로는 API에서 가져와야 함
@@ -24,17 +25,29 @@ export function HomeView() {
     <div className="p-4 space-y-6 pb-24">
       <header className="flex justify-between items-center py-2">
         <h1 className="text-2xl font-bold text-stone-800">나의 모임</h1>
-        <Link to="/notifications">
-          <Button variant="ghost" size="icon" className="text-stone-500 relative">
-            <span className="sr-only">알림</span>
-            <Bell className="w-6 h-6" />
-            {unreadNotifications > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                {unreadNotifications}
-              </span>
-            )}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link to="/explore">
+            <Button variant="ghost" size="icon" className="text-stone-500">
+              <Compass className="w-6 h-6" />
+            </Button>
+          </Link>
+          <Link to="/notifications">
+            <Button variant="ghost" size="icon" className="text-stone-500 relative">
+              <span className="sr-only">알림</span>
+              <Bell className="w-6 h-6" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  {unreadNotifications}
+                </span>
+              )}
+            </Button>
+          </Link>
+          <Link to="/profile">
+            <Avatar className="w-8 h-8 cursor-pointer">
+              <AvatarFallback>홍</AvatarFallback>
+            </Avatar>
+          </Link>
+        </div>
       </header>
 
       {/* Search */}

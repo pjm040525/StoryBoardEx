@@ -1,5 +1,7 @@
-import { Folder, Heart, MessageCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Folder, Heart, MessageCircle, Plus, Camera } from 'lucide-react';
 import { Card, CardContent } from '../../ui/card';
+import { Button } from '../../ui/button';
 
 export function StoriesView() {
   const folders = [
@@ -17,11 +19,32 @@ export function StoriesView() {
       likes: 12,
       comments: 4,
       date: '2시간 전'
+    },
+    { 
+      id: 2, 
+      user: '이영희', 
+      userImg: '',
+      image: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=600&auto=format&fit=crop',
+      content: '정말 즐거웠어요! 다음 모임도 기대됩니다 🎉',
+      likes: 8,
+      comments: 2,
+      date: '5시간 전'
     }
   ];
 
   return (
     <div className="space-y-8 pb-20">
+      {/* Create Story Button */}
+      <div className="flex justify-between items-center px-1">
+        <h3 className="font-bold text-lg text-stone-800">스토리</h3>
+        <Link to="create">
+          <Button className="bg-orange-500 hover:bg-orange-600 rounded-full">
+            <Camera className="w-4 h-4 mr-2" />
+            스토리 작성
+          </Button>
+        </Link>
+      </div>
+
       {/* Albums / Folders */}
       <section>
         <h3 className="font-bold text-lg text-stone-800 px-1 mb-3">앨범</h3>
@@ -47,36 +70,51 @@ export function StoriesView() {
         <h3 className="font-bold text-lg text-stone-800 px-1 mb-3">최근 게시글</h3>
         <div className="space-y-6">
           {recentPosts.map(post => (
-            <div key={post.id} className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-              <div className="p-3 flex items-center gap-3">
-                <img src={post.userImg} alt="" className="w-8 h-8 rounded-full bg-stone-200" />
-                <div>
-                  <p className="font-bold text-sm text-stone-900">{post.user}</p>
-                  <p className="text-xs text-stone-400">{post.date}</p>
+            <Link to={`${post.id}`} key={post.id}>
+              <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="p-3 flex items-center gap-3">
+                  <img 
+                    src={post.userImg || `https://api.dicebear.com/7.x/initials/svg?seed=${post.user}`} 
+                    alt="" 
+                    className="w-8 h-8 rounded-full bg-stone-200" 
+                  />
+                  <div>
+                    <p className="font-bold text-sm text-stone-900">{post.user}</p>
+                    <p className="text-xs text-stone-400">{post.date}</p>
+                  </div>
+                </div>
+                <div className="aspect-[4/3] bg-stone-100">
+                  <img src={post.image} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="flex gap-4">
+                    <span className="flex items-center gap-1 text-stone-600">
+                      <Heart className="w-5 h-5" />
+                      <span className="text-sm font-medium">{post.likes}</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-stone-600">
+                      <MessageCircle className="w-5 h-5" />
+                      <span className="text-sm font-medium">{post.comments}</span>
+                    </span>
+                  </div>
+                  <p className="text-stone-800 text-sm leading-relaxed line-clamp-2">
+                    {post.content}
+                  </p>
                 </div>
               </div>
-              <div className="aspect-[4/3] bg-stone-100">
-                <img src={post.image} alt="" className="w-full h-full object-cover" />
-              </div>
-              <div className="p-4 space-y-3">
-                <div className="flex gap-4">
-                  <button className="flex items-center gap-1 text-stone-600 hover:text-red-500 transition-colors">
-                    <Heart className="w-6 h-6" />
-                    <span className="text-sm font-medium">{post.likes}</span>
-                  </button>
-                  <button className="flex items-center gap-1 text-stone-600 hover:text-blue-500 transition-colors">
-                    <MessageCircle className="w-6 h-6" />
-                    <span className="text-sm font-medium">{post.comments}</span>
-                  </button>
-                </div>
-                <p className="text-stone-800 text-sm leading-relaxed">
-                  {post.content}
-                </p>
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
+
+      {/* FAB */}
+      <div className="fixed bottom-20 right-4 md:right-[calc(50%-220px+1rem)] z-40">
+        <Link to="create">
+          <Button size="lg" className="rounded-full w-14 h-14 shadow-lg bg-orange-500 hover:bg-orange-600 text-white p-0">
+            <Plus className="w-7 h-7" />
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }

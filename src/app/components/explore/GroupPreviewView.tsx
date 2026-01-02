@@ -1,0 +1,290 @@
+import { useState } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import { ArrowLeft, MapPin, Users, Calendar, Share2, Heart, MessageCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
+
+export function GroupPreviewView() {
+  const navigate = useNavigate();
+  const { groupId } = useParams();
+  const [isLiked, setIsLiked] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [joinMessage, setJoinMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Mock data
+  const group = {
+    id: groupId,
+    name: '주말 등산 클럽',
+    image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&auto=format&fit=crop&q=60',
+    description: '매주 토요일 서울 근교 산행합니다. 초보자 환영! 산을 좋아하는 분들과 함께 건강하고 즐거운 주말을 보내요. 등산 후에는 맛있는 식사와 함께 친목도 다집니다.',
+    tags: ['등산', '운동', '친목', '주말'],
+    memberCount: 15,
+    maxMembers: 50,
+    type: 'club',
+    location: '서울',
+    createdAt: '2024.01.15',
+    leader: {
+      name: '홍길동',
+      avatar: '',
+    },
+    recentMembers: [
+      { id: '1', name: '김철수', avatar: '' },
+      { id: '2', name: '이영희', avatar: '' },
+      { id: '3', name: '박민수', avatar: '' },
+    ],
+    upcomingEvents: [
+      { id: '1', title: '관악산 정기 산행', date: '4월 12일 (토) 10:00', location: '사당역 4번 출구' },
+      { id: '2', title: '북한산 봄맞이 산행', date: '4월 26일 (토) 09:00', location: '북한산성입구역' },
+    ],
+    gallery: [
+      'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?w=300&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1502224562085-639556652f33?w=300&h=300&fit=crop',
+    ],
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success('링크가 복사되었습니다');
+  };
+
+  const handleJoinRequest = () => {
+    setIsSubmitting(true);
+    // 실제로는 API 호출
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setShowJoinDialog(false);
+      toast.success('가입 신청이 완료되었습니다. 관리자 승인을 기다려주세요.');
+    }, 1000);
+  };
+
+  return (
+    <div className="min-h-screen bg-stone-50 pb-24">
+      {/* Header Image */}
+      <div className="relative h-56 bg-stone-300">
+        <img
+          src={group.image}
+          alt={group.name}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        
+        {/* Top Navigation */}
+        <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="bg-black/20 hover:bg-black/40 text-white rounded-full"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsLiked(!isLiked)}
+              className="bg-black/20 hover:bg-black/40 text-white rounded-full"
+            >
+              <Heart className={`w-6 h-6 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleShare}
+              className="bg-black/20 hover:bg-black/40 text-white rounded-full"
+            >
+              <Share2 className="w-6 h-6" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Group Name on Image */}
+        <div className="absolute bottom-4 left-4 right-4">
+          <Badge className="bg-white/90 text-stone-800 mb-2">
+            {group.type === 'club' ? '동아리' : group.type === 'study' ? '스터디' : '정모'}
+          </Badge>
+          <h1 className="text-2xl font-bold text-white">{group.name}</h1>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-5 space-y-6">
+        {/* Info */}
+        <div className="flex items-center gap-4 text-sm text-stone-600">
+          <span className="flex items-center gap-1">
+            <MapPin className="w-4 h-4" />
+            {group.location}
+          </span>
+          <span className="flex items-center gap-1">
+            <Users className="w-4 h-4" />
+            {group.memberCount}/{group.maxMembers}명
+          </span>
+          <span className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            {group.createdAt} 개설
+          </span>
+        </div>
+
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2">
+          {group.tags.map(tag => (
+            <Badge key={tag} variant="secondary" className="bg-orange-100 text-orange-700">
+              #{tag}
+            </Badge>
+          ))}
+        </div>
+
+        {/* Description */}
+        <div className="bg-white rounded-xl p-4 border border-stone-100">
+          <h3 className="font-bold text-stone-900 mb-2">소개</h3>
+          <p className="text-sm text-stone-600 leading-relaxed">{group.description}</p>
+        </div>
+
+        {/* Leader */}
+        <div className="bg-white rounded-xl p-4 border border-stone-100">
+          <h3 className="font-bold text-stone-900 mb-3">모임장</h3>
+          <div className="flex items-center gap-3">
+            <Avatar className="w-12 h-12">
+              <AvatarImage src={group.leader.avatar} />
+              <AvatarFallback>{group.leader.name[0]}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium text-stone-900">{group.leader.name}</p>
+              <p className="text-xs text-stone-500">모임장</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Members Preview */}
+        <div className="bg-white rounded-xl p-4 border border-stone-100">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-stone-900">멤버</h3>
+            <span className="text-sm text-stone-500">{group.memberCount}명</span>
+          </div>
+          <div className="flex -space-x-2">
+            {group.recentMembers.map(member => (
+              <Avatar key={member.id} className="w-10 h-10 border-2 border-white">
+                <AvatarImage src={member.avatar} />
+                <AvatarFallback>{member.name[0]}</AvatarFallback>
+              </Avatar>
+            ))}
+            {group.memberCount > 3 && (
+              <div className="w-10 h-10 rounded-full bg-stone-100 border-2 border-white flex items-center justify-center text-xs text-stone-600">
+                +{group.memberCount - 3}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Upcoming Events */}
+        {group.upcomingEvents.length > 0 && (
+          <div className="bg-white rounded-xl p-4 border border-stone-100">
+            <h3 className="font-bold text-stone-900 mb-3">다가오는 일정</h3>
+            <div className="space-y-3">
+              {group.upcomingEvents.map(event => (
+                <div key={event.id} className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-stone-900">{event.title}</p>
+                    <p className="text-xs text-stone-500">{event.date}</p>
+                    <p className="text-xs text-stone-400">{event.location}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Gallery */}
+        {group.gallery.length > 0 && (
+          <div className="bg-white rounded-xl p-4 border border-stone-100">
+            <h3 className="font-bold text-stone-900 mb-3">갤러리</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {group.gallery.map((img, i) => (
+                <div key={i} className="aspect-square rounded-lg overflow-hidden bg-stone-200">
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom CTA */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 p-4 safe-area-pb">
+        <div className="max-w-md mx-auto flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1 h-12 rounded-xl"
+            onClick={() => toast.info('로그인 후 문의할 수 있습니다')}
+          >
+            <MessageCircle className="w-5 h-5 mr-2" />
+            문의하기
+          </Button>
+          <Button
+            className="flex-1 h-12 bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+            onClick={() => setShowJoinDialog(true)}
+          >
+            가입 신청
+          </Button>
+        </div>
+      </div>
+
+      {/* Join Dialog */}
+      <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>가입 신청</DialogTitle>
+            <DialogDescription>
+              "{group.name}" 모임에 가입을 신청합니다.
+              관리자 승인 후 모임에 참여할 수 있습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>가입 인사 (선택)</Label>
+              <Textarea
+                placeholder="모임장에게 전할 인사말을 작성해주세요"
+                className="min-h-24 resize-none"
+                value={joinMessage}
+                onChange={(e) => setJoinMessage(e.target.value)}
+              />
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs text-blue-800">
+                💡 로그인이 필요합니다. 가입 신청을 위해 먼저 로그인해주세요.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowJoinDialog(false)}>
+              취소
+            </Button>
+            <Link to="/login">
+              <Button className="bg-orange-500 hover:bg-orange-600">
+                로그인하러 가기
+              </Button>
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
